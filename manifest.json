@@ -1,0 +1,28 @@
+{
+  "manifest_version": 2,
+  "name": "Fiability",
+  "version": "1.0",
+  "description": "envoie les liens vers l'api afin de vérifier leur fiabilité",
+  "icons": {
+    "48": "icons/icon.png"
+  },
+  "browser_action": {
+    "default_popup": "button.html"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.fr/*"
+      ],
+      "js": [
+        "send_url.js",
+        "extract_link.js"
+      ]
+    }
+  ]
+}

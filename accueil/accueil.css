@@ -1,14 +1,19 @@
 body {
-  background-color: #F1F1D3; /* Couleur de fond */
-  width: 300px;
+  background-color: #f1f1f1; /* Couleur de fond */
+  width: 150px;
+  height: 200px;
   font-family: Arial, sans-serif;
-  border: 5px inset #3e6152; /* Bordure */
-  padding: 20px; /* Espace intérieur pour aérer le contenu */
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2); /* Ombre légère pour donner du relief */
 }
 
 .container {
   padding: 8px;
+}
+
+h1 {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 10px;
 }
 #evaluer {
   display: none;
@@ -16,12 +21,43 @@ body {
 ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
-li {
-  margin-bottom: 5px;
+#highlightButton {
+  background: #6c82ac;
+  border: 1px solid #6c82ac;
+  border-radius: 6px;
+  box-shadow: rgba(0, 0, 0, 0.1) 1px 2px 4px;
+  box-sizing: border-box;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-block;
+
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 16px;
+  min-height: 40px;
+  outline: 0;
+  padding: 12px 14px;
+  text-align: center;
+  text-rendering: geometricprecision;
+  text-transform: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
 }
 
-#highlightButton{
-  background-color: #6c82ac; /* Vert */
+#highlightButton:hover,
+#highlightButton:active {
+  background-color: initial;
+  background-position: 0 0;
+  color: #6c82ac;
 }
+
+#highlightButton:active {
+  opacity: 0.5;
+}
+
+/* CSS */

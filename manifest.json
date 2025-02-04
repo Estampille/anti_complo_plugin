@@ -1,28 +1,26 @@
 {
-  "manifest_version": 2,
-  "name": "Fiability",
+  "manifest_version": 3,
+  "name": "Check My Link",
   "version": "1.0",
-  "description": "envoie les liens vers l'api afin de vérifier leur fiabilité",
+  "description": "Alpha évaluation des contenus sur le web",
+  "action": {
+    "default_popup": "accueil/accueil.html",
+    "default_icon": {
+      "48": "images/icon48.jpg"
+    }
+  },
   "icons": {
-    "48": "icons/icon.png"
+    "48": "images/icon48.jpg"
   },
-  "browser_action": {
-    "default_popup": "button.html"
-  },
-  "permissions": [
-    "activeTab",
-    "storage",
-    "<all_urls>"
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "<all_urls>",
+    "https://9377-87-121-211-134.ngrok-free.app/*"
   ],
   "content_scripts": [
     {
-      "matches": [
-        "*://*.fr/*"
-      ],
-      "js": [
-        "send_url.js",
-        "extract_link.js"
-      ]
+      "matches": ["<all_urls>"],
+      "js": ["accueil/extract_link.js"]
     }
   ]
 }

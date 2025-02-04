@@ -1,0 +1,27 @@
+body {
+  background-color: #F1F1D3; /* Couleur de fond */
+  width: 300px;
+  font-family: Arial, sans-serif;
+  border: 5px inset #3e6152; /* Bordure */
+  padding: 20px; /* Espace intérieur pour aérer le contenu */
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2); /* Ombre légère pour donner du relief */
+}
+
+.container {
+  padding: 8px;
+}
+#evaluer {
+  display: none;
+}
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 5px;
+}
+
+#highlightButton{
+  background-color: #6c82ac; /* Vert */
+}

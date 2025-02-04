@@ -1,27 +1,73 @@
 body {
-  background-color: #F1F1D3; /* Couleur de fond */
+  background-color: #ffffff;
   width: 300px;
   font-family: Arial, sans-serif;
-  border: 5px inset #3e6152; /* Bordure */
-  padding: 20px; /* Espace intérieur pour aérer le contenu */
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2); /* Ombre légère pour donner du relief */
 }
 
 .container {
-  padding: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
-#evaluer {
-  display: none;
+
+h1 {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 15px;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
+
 ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 li {
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-#highlightButton{
-  background-color: #6c82ac; /* Vert */
+#highlightButton {
+  background: #6c82ac;
+  border: 1px solid #6c82ac;
+  border-radius: 6px;
+  box-shadow: rgba(0, 0, 0, 0.1) 1px 2px 4px;
+  box-sizing: border-box;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: nunito, roboto, proxima-nova, "proxima nova", sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 16px;
+  min-height: 40px;
+  outline: 0;
+  padding: 12px 14px;
+  text-align: center;
+  text-rendering: geometricprecision;
+  text-transform: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
+  margin: 2rem;
+}
+
+#highlightButton:hover,
+#highlightButton:active {
+  background-color: initial;
+  background-position: 0 0;
+  color: #6c82ac;
+}
+
+#highlightButton:active {
+  opacity: 0.5;
 }

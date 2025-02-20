@@ -71,3 +71,7 @@ li {
 #highlightButton:active {
   opacity: 0.5;
 }
+
+#evaluer {
+  display: none;
+}

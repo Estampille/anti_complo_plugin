@@ -1,8 +1,3 @@
-/**
- * Module de gestion des infobulles
- * Utilise une approche avec namespace au lieu des modules ES6
- */
-
 // Créer un namespace global pour les infobulles
 window.TooltipModule = (function () {
   // Fonction pour afficher une infobulle

@@ -1,8 +1,3 @@
-/**
- * Module de gestion des scores
- * Utilise une approche avec namespace au lieu des modules ES6
- */
-
 // Créer un namespace global pour les scores
 window.ScoresModule = (function () {
   // Générer des scores pour tous les éléments textuels de la page

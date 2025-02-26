@@ -1,8 +1,3 @@
-/**
- * Script principal pour l'analyse des liens et textes de la page
- * Utilise les modules avec approche par namespace
- */
-
 (function () {
   // Variable pour stocker les scores
   let scores = {};

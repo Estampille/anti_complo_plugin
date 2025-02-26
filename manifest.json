@@ -18,10 +18,29 @@
     "<all_urls>",
     "https://9377-87-121-211-134.ngrok-free.app/*"
   ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "check-my-link@example.com"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["accueil/extract_link.js"]
+      "js": [
+        "accueil/modules/tooltip.js",
+        "accueil/modules/scores.js",
+        "accueil/extract_link.js"
+      ],
+      "css": ["accueil/infobulles.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["accueil/infobulles.css"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

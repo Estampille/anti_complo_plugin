@@ -1,39 +1,48 @@
 document.addEventListener("DOMContentLoaded", (event) => {
-  // Ensure the button exists
+  console.log("Popup chargé");
 
-  document.getElementById("highlightButton").addEventListener("click", () => {
-    console.log("Highlight button clicked");
-    const evaluer = document.getElementById("evaluer");
-    if (evaluer) {
-      evaluer.style.display = "block";
-    }
-    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      browser.tabs.sendMessage(tabs[0].id, { action: "highlight" });
-    });
-  });
-
-  browser.runtime.onMessage.addListener((message) => {
-    if (message.action === "displayScore") {
-      console.log("Score received:", message.score);
-      document.getElementById(
-        "scoreFiabilite"
-      ).textContent = `confiance ${message.score}%`;
-      let color;
-      const score = message.score;
-      if (score < 45) {
-        const red = Math.round((255 * (1 - (score - 55))) / 45);
-        //color = `rgb( ${orange}, 255, 0)`;
-        color = "red";
-      } else if (score >= 45 && score < 60) {
-        color = "yellow";
-      } else {
-        const green = Math.round(255 * (1 - (score - 55) / 45));
-        color = `rgb( ${green},255, 0)`;
+  // Vérifier si le bouton existe avant d'ajouter un écouteur
+  const highlightButton = document.getElementById("highlightButton");
+  if (highlightButton) {
+    highlightButton.addEventListener("click", () => {
+      console.log("Highlight button clicked");
+      const evaluer = document.getElementById("evaluer");
+      if (evaluer) {
+        evaluer.style.display = "block";
       }
 
-      document.getElementById("evaluer").style.display = "block";
+      // Envoyer l'action "highlight" au script de contenu via le background
+      browser.runtime.sendMessage({ action: "highlight" });
+    });
+  }
 
-      document.getElementById("highlightButton").style.backgroundColor = color;
+  // Écouter les messages pour afficher le score global
+  browser.runtime.onMessage.addListener((message) => {
+    console.log("Message reçu dans accueil.js :", message);
+    if (message.action === "displayScore") {
+      console.log("Score received:", message.globalScore);
+      const scoreFiabilite = document.getElementById("scoreFiabilite");
+
+      if (scoreFiabilite) {
+        scoreFiabilite.textContent = `Confiance : ${message.globalScore}%`;
+        console.log("Score affiché dans le popup :", message.globalScore);
+      }
+
+      let color;
+      const score = parseFloat(message.globalScore); // Convertir en nombre
+
+      if (score < 45) {
+        color = "red";
+      } else if (score >= 45 && score < 60) {
+        color = "orange";
+      } else {
+        color = "green";
+      }
+
+      // Appliquer la couleur au bouton
+      if (highlightButton) {
+        highlightButton.style.backgroundColor = color;
+      }
     }
   });
 });

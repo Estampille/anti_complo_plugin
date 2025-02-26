@@ -1,49 +1,76 @@
-browser.runtime.onMessage.addListener((message) => {
-  if (message.action === "highlight") {
-    // Récupérer les liens de la page (inutile pour le moment)
-    // let liens = document.getElementsByTagName("a");
-    // let links_array = [];
-    // let pageUrl = window.location.href;
-    // const base_url = "https://9377-87-121-211-134.ngrok-free.app";
+/**
+ * Script principal pour l'analyse des liens et textes de la page
+ * Utilise les modules avec approche par namespace
+ */
 
-    console.log("Message 'highlight' reçu, analyse en cours...");
-    const scorePourcentage = Math.floor(Math.random() * 100);
-    // Simuler une requête et générer un score de confiance
-    const responseJson = [
-      {
-        field: "score de confiance",
-        confidence: scorePourcentage, // Converti entre 0 et 1
-        value: `${scorePourcentage}%`, // Affichage correct
-        displayText: `Score de confiance : ${scorePourcentage}%`,
-      },
-    ];
+(function () {
+  // Variable pour stocker les scores
+  let scores = {};
 
-    console.log(
-      "JSON généré avant envoi :",
-      JSON.stringify(responseJson, null, 2)
-    );
+  // Initialiser le module d'infobulles
+  TooltipModule.loadTooltipStyles();
 
-    const result = responseJson.map((item) => ({
-      field: item.field,
-      confidence: scorePourcentage, // Convertir en pourcentage
-      value: item.value,
-      displayText: `${item.field} : score de confiance ${scorePourcentage}%, value : ${item.value}`,
-    }));
+  // Écouteur de messages pour l'action "highlight"
+  browser.runtime.onMessage.addListener((message) => {
+    try {
+      if (message.action === "highlight") {
+        // Sélectionner tous les paragraphes et liens
+        const elements = document.querySelectorAll("p, a");
 
-    console.log("Envoi du message displayScore:", result);
+        // Générer des scores pour les éléments
+        scores = ScoresModule.generateScores(elements);
 
-    // Envoie le message au script du popup (accueil.js)
-    browser.runtime.sendMessage({
-      action: "displayScore",
-      score: result[0].confidence,
-    });
-  }
-});
-const fieldset = document.getElementById("evaluer");
-const responseMessage = document.getElementById("Merci !");
+        // Calculer le score moyen
+        const averageScore = ScoresModule.calculateAverageScore(scores);
 
-fieldset.addEventListener("change", (event) => {
-  const selectedResponse = event.target.value;
-  console.log("Réponse de l'utilisateur :", selectedResponse);
-  responseMessage.textContent = "Réponse envoyée";
-});
+        // Envoyer les scores via le background script
+        browser.runtime
+          .sendMessage({
+            action: "displayScores",
+            scores: scores,
+          })
+          .catch((error) => {
+            // Ignorer l'erreur si le destinataire n'existe pas
+            console.log("Info: Message envoyé mais sans récepteur actif");
+          });
+
+        // Envoyer le score global via le background script
+        browser.runtime
+          .sendMessage({
+            action: "displayScore",
+            globalScore: averageScore,
+          })
+          .catch((error) => {
+            // Ignorer l'erreur si le destinataire n'existe pas
+            console.log("Info: Message envoyé mais sans récepteur actif");
+          });
+
+        // Attacher les écouteurs d'événements pour les infobulles
+        ScoresModule.attachEventListeners(
+          elements,
+          scores,
+          TooltipModule.showTooltip,
+          TooltipModule.hideTooltip
+        );
+      }
+
+      // Recevoir les scores du background (si nécessaire)
+      if (message.action === "displayScores") {
+        scores = message.scores;
+        ScoresModule.attachEventListeners(
+          document.querySelectorAll("p, a"),
+          scores,
+          TooltipModule.showTooltip,
+          TooltipModule.hideTooltip
+        );
+      }
+    } catch (error) {
+      console.log("Erreur dans extract_link.js:", error);
+    }
+
+    return false; // Pas de réponse asynchrone
+  });
+
+  // Informer que le script est chargé
+  console.log("Extract_link.js chargé");
+})();

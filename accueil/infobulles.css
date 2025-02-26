@@ -1,0 +1,33 @@
+.mylink-tooltip {
+  position: fixed;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 999999;
+  pointer-events: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.2s, background-color 0.3s;
+}
+
+.mylink-tooltip-low {
+  background-color: rgba(220, 53, 69, 0.9); /* Rouge pour les scores bas */
+  border: 2px solid #dc3545;
+}
+
+.mylink-tooltip-medium {
+  background-color: rgba(
+    255,
+    193,
+    7,
+    0.9
+  ); /* Jaune/Orange pour les scores moyens */
+  border: 2px solid #ffc107;
+  color: #212529; /* Texte foncé pour meilleure lisibilité sur fond clair */
+}
+
+.mylink-tooltip-high {
+  background-color: rgba(40, 167, 69, 0.9); /* Vert pour les scores élevés */
+  border: 2px solid #28a745;
+}

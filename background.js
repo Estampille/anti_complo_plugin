@@ -14,7 +14,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             browser.tabs
               .sendMessage(tabs[0].id, { action: "highlight" })
               .catch((error) => {
-                console.log("Erreur lors de l'envoi du message au content script:", error);
+                console.log(
+                  "Erreur lors de l'envoi du message au content script:",
+                  error
+                );
               });
           } else {
             console.log("Aucun onglet actif trouvé");
@@ -26,7 +29,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     // Si le message vient du content script et est destiné au popup
-    if ((message.action === "displayScores" || message.action === "displayScore") && sender.tab) {
+    if (
+      (message.action === "displayScores" ||
+        message.action === "displayScore") &&
+      sender.tab
+    ) {
       try {
         browser.runtime.sendMessage(message).catch((error) => {
           if (!error.message.includes("Receiving end does not exist")) {
@@ -42,31 +49,29 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "sendLinks" && sender.tab) {
       console.log("Liens à analyser :", message.links);
 
-      fetch("http://146.59.218.238:5001/analyze_site_infos", {
+      fetch("http://localhost:5000/analyze_site_infos", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ urls: message.links })
+        body: JSON.stringify({ urls: message.links }),
       })
-        .then(response => response.json())
-        .then(data => {
-          console.log("Réponse de l'API :", data);
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Réponse API :", data);
 
-          // Relayer la réponse vers le popup
+          // ✅ Relayer la réponse vers le popup
           browser.runtime.sendMessage({
             action: "displayScore",
-            globalScore: data.globalScore // adapte ce champ selon ta vraie réponse API
+            globalScore: data.globalScore, // adapte ce champ selon ta vraie réponse API
           });
-
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Erreur lors de l'appel à l'API :", error);
         });
     }
-
   } catch (error) {
-    console.log("Erreur générale dans le gestionnaire de messages:", error);
+    console.error("Erreur inattendue dans le listener onMessage:", error);
   }
 
   return false;

@@ -1,32 +1,24 @@
 // Créer un namespace global pour les scores
 window.ScoresModule = (function () {
-  // Générer des scores pour tous les éléments textuels de la page
-  function generateScores(elements) {
-    const scores = {};
+  // Conserver le score global renvoyé par l'API
+  let apiGlobalScore = null;
 
-    elements.forEach((element) => {
-      const textKey = element.innerText.trim().substring(0, 50);
-      const scorePourcentage = Math.floor(Math.random() * 100);
-      scores[textKey] = scorePourcentage;
-    });
-
-    return scores;
+  // Cette fonction sera appelée avec les données de l'API
+  function updateWithApiData(scoreData) {
+    apiGlobalScore = scoreData.globalScore;
+    return apiGlobalScore;
   }
 
-  // Calculer le score moyen global
-  function calculateAverageScore(scores) {
-    const values = Object.values(scores);
-
-    if (values.length === 0) {
-      return "0.00";
+  // Calculer le score moyen global - maintenant utilise la valeur de l'API si disponible
+  function calculateAverageScore() {
+    if (apiGlobalScore !== null) {
+      return apiGlobalScore;
     }
-
-    const totalScore = values.reduce((sum, val) => sum + val, 0);
-    return (totalScore / values.length).toFixed(2);
+    return "0.00"; // Valeur par défaut si l'API n'a pas encore répondu
   }
 
   // Attacher les écouteurs d'événements pour les infobulles
-  function attachEventListeners(elements, scores, showTooltip, hideTooltip) {
+  function attachEventListeners(elements, showTooltip, hideTooltip) {
     // Nettoyer les anciens écouteurs
     elements.forEach((element) => {
       if (element._tooltipEnterHandler) {
@@ -40,34 +32,30 @@ window.ScoresModule = (function () {
 
     // Attacher de nouveaux écouteurs
     elements.forEach((element) => {
-      const textKey = element.innerText.trim().substring(0, 50);
-      const score = scores[textKey];
+      // Utiliser le score global de l'API pour toutes les infobulles
+      // Gestionnaire d'entrée de souris
+      const enterHandler = () => {
+        showTooltip(element, apiGlobalScore || "En attente...");
+      };
 
-      if (score !== undefined) {
-        // Gestionnaire d'entrée de souris
-        const enterHandler = () => {
-          showTooltip(element, score);
-        };
+      // Gestionnaire de sortie de souris
+      const leaveHandler = () => {
+        hideTooltip();
+      };
 
-        // Gestionnaire de sortie de souris
-        const leaveHandler = () => {
-          hideTooltip();
-        };
+      // Stocker les références pour pouvoir les supprimer plus tard
+      element._tooltipEnterHandler = enterHandler;
+      element._tooltipLeaveHandler = leaveHandler;
 
-        // Stocker les références pour pouvoir les supprimer plus tard
-        element._tooltipEnterHandler = enterHandler;
-        element._tooltipLeaveHandler = leaveHandler;
-
-        // Attacher les écouteurs
-        element.addEventListener("mouseenter", enterHandler);
-        element.addEventListener("mouseleave", leaveHandler);
-      }
+      // Attacher les écouteurs
+      element.addEventListener("mouseenter", enterHandler);
+      element.addEventListener("mouseleave", leaveHandler);
     });
   }
 
   // Exposer les fonctions publiques
   return {
-    generateScores: generateScores,
+    updateWithApiData: updateWithApiData,
     calculateAverageScore: calculateAverageScore,
     attachEventListeners: attachEventListeners,
   };

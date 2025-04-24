@@ -14,10 +14,7 @@
     "48": "images/icon48.png"
   },
   "permissions": ["activeTab", "storage"],
-  "host_permissions": [
-    "<all_urls>",
-    "https://9377-87-121-211-134.ngrok-free.app/*"
-  ],
+  "host_permissions": ["<all_urls>", "http://localhost:5001/*"],
   "background": {
     "scripts": ["background.js"]
   },

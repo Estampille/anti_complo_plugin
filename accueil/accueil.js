@@ -11,8 +11,19 @@ document.addEventListener("DOMContentLoaded", (event) => {
         evaluer.style.display = "block";
       }
 
-      // Envoyer l'action "highlight" au script de contenu via le background
-      browser.runtime.sendMessage({ action: "highlight" });
+      // Extraire et envoyer les liens pour analyse par l'API
+      browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+        if (tabs[0]) {
+          browser.tabs
+            .sendMessage(tabs[0].id, { action: "extractLinks" })
+            .catch((error) =>
+              console.error(
+                "Erreur lors de la demande d'extraction des liens:",
+                error
+              )
+            );
+        }
+      });
     });
   }
 
@@ -29,19 +40,28 @@ document.addEventListener("DOMContentLoaded", (event) => {
       }
 
       let color;
-      const score = parseFloat(message.globalScore); // Convertir en nombre
+      const score = parseFloat(message.globalScore);
 
-      if (score < 45) {
-        color = "red";
-      } else if (score >= 45 && score < 60) {
-        color = "orange";
+      if (!isNaN(score)) {
+        let color;
+
+        if (score < 45) {
+          color = "red";
+        } else if (score >= 45 && score < 60) {
+          color = "orange";
+        } else {
+          color = "green";
+        }
+
+        // Appliquer la couleur au bouton
+        if (highlightButton) {
+          highlightButton.style.backgroundColor = color;
+        }
       } else {
-        color = "green";
-      }
-
-      // Appliquer la couleur au bouton
-      if (highlightButton) {
-        highlightButton.style.backgroundColor = color;
+        console.warn("Score non numérique reçu :", message.globalScore);
+        if (scoreFiabilite) {
+          scoreFiabilite.textContent = `Erreur lors de l'analyse`;
+        }
       }
     }
   });

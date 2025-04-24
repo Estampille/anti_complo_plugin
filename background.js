@@ -45,29 +45,52 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }
 
-    // 🎯 Nouveau : si le message demande d'analyser les liens
+    // Si le message demande d'analyser les liens
     if (message.action === "sendLinks" && sender.tab) {
       console.log("Liens à analyser :", message.links);
 
-      fetch("http://localhost:5000/analyze_site_infos", {
+      const payload = {
+        urls: message.links,
+        main_url: message.links[0] || "", // ou tab.url si tu veux l’URL active
+      };
+
+      fetch("http://localhost:5001/analyze_site_infos", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ urls: message.links }),
+        body: JSON.stringify(payload),
       })
-        .then((response) => response.json())
+        .then((res) => res.json())
         .then((data) => {
-          console.log("Réponse API :", data);
+          console.log("Réponse API :", data); // ← pour debug
 
-          // ✅ Relayer la réponse vers le popup
-          browser.runtime.sendMessage({
+          if (sender.tab) {
+            // Utiliser l'ID de l'onglet courant
+            const tabId = sender.tab.id;
+            browser.tabs.sendMessage(tabId, {
+              action: "displayScore",
+              globalScore: data.globalScore ?? "Non défini",
+            });
+          } else {
+            console.error(
+              "Impossible de récupérer tabId pour envoyer le message."
+            );
+          }
+
+          browser.tabs.sendMessage(tabId, {
             action: "displayScore",
-            globalScore: data.globalScore, // adapte ce champ selon ta vraie réponse API
+            globalScore: data.globalScore ?? "Non défini", // ← selon ce que l’API renvoie
           });
         })
         .catch((error) => {
           console.error("Erreur lors de l'appel à l'API :", error);
+          // En cas d'erreur, on informe le popup
+          browser.runtime.sendMessage({
+            action: "displayScore",
+            globalScore: "Erreur",
+          });
         });
     }
   } catch (error) {

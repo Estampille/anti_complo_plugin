@@ -1,0 +1,16 @@
+services:
+  eval:
+    image: estampille/anticomplo:v0.12
+    container_name: eval
+    restart: unless-stopped
+    environment:
+      - API_IP=scrapper
+    ports:
+      - "5001:5000"
+
+  scrapper:
+    image: estampille/anticomplo_scrap:v0.1
+    container_name: scrapper
+    restart: unless-stopped
+    ports:
+      - "5000:5000"

@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Eval infos</title>
-  <link rel="stylesheet" type="text/css" href="accueil.css"> </head>
-<body>
-  <div class="container">
-    <h1>Evaluer ce contenu !</h1>
-    <p id="scoreFiabilite"></p>
-    <fieldset id="evaluer">
-      <legend>Etes vous d'accord ? </legend>
-      <div>
-        <input type="checkbox" id="coding" name="true" value="true" />
-        <label for="true">Je suis d'accord</label>
-      </div>
-      <div>
-        <input type="checkbox" id="music" name="middle" value="middle" />
-        <label for="middle">Je ne sais pas</label>
-      </div>
-      <div>
-        <input type="checkbox" id="music" name="false" value="false" />
-        <label for="false">Je ne suis pas d'accord</label>
-      </div>
-    </fieldset>    
-    <button id="highlightButton">Analyser les liens</button>
-    <script src="accueil.js"></script>
-  </div>
-</body>
+  <head>
+    <title>Eval infos</title>
+    <link rel="stylesheet" type="text/css" href="accueil.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Evaluer ce contenu !</h1>
+      <p id="scoreFiabilite"></p>
+      <fieldset id="evaluer">
+        <legend>Etes vous d'accord ?</legend>
+        <div>
+          <input type="checkbox" id="coding" name="true" value="true" />
+          <label for="true">Je suis d'accord</label>
+        </div>
+        <div>
+          <input type="checkbox" id="music" name="middle" value="middle" />
+          <label for="middle">Je ne sais pas</label>
+        </div>
+        <div>
+          <input type="checkbox" id="music" name="false" value="false" />
+          <label for="false">Je ne suis pas d'accord</label>
+        </div>
+      </fieldset>
+      <button id="highlightButton">Analyser les liens</button>
+      <script type="module" src="./accueil.js"></script>
+    </div>
+  </body>
 </html>

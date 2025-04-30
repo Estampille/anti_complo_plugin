@@ -12,6 +12,10 @@
         const links = Array.from(document.querySelectorAll("a"))
           .map((a) => a.href)
           .filter((href) => href && href.startsWith("http"));
+        //const currentUrl = window.location.href;
+
+        // Envoie cette URL pour analyse
+        //chrome.runtime.sendMessage({ type: "analyzePage", url: currentUrl });
 
         console.log(`${links.length} liens extraits pour analyse`);
 

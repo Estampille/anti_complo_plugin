@@ -35,7 +35,10 @@ document.addEventListener("DOMContentLoaded", (event) => {
       const scoreFiabilite = document.getElementById("scoreFiabilite");
 
       if (scoreFiabilite) {
-        scoreFiabilite.textContent = `Confiance : ${message.globalScore}%`;
+        if (scoreFiabilite) {
+          const scoreSur10 = (parseFloat(message.globalScore) * 100).toFixed(1);
+          scoreFiabilite.textContent = `Confiance : ${scoreSur10}`;
+        }
         console.log("Score affiché dans le popup :", message.globalScore);
       }
 

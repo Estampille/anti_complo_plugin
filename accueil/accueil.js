@@ -1,8 +1,42 @@
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", () => {
   console.log("Popup chargé");
 
-  // Vérifier si le bouton existe avant d'ajouter un écouteur
+  const scoreFiabilite = document.getElementById("scoreFiabilite");
   const highlightButton = document.getElementById("highlightButton");
+  const resetButton = document.getElementById("resetScoreButton");
+
+  // 🔁 Afficher le score sauvegardé
+  browser.storage.local
+    .get(["savedScore", "savedLabel", "savedColor"])
+    .then((result) => {
+      if (result.savedScore && result.savedLabel && result.savedColor) {
+        if (scoreFiabilite) {
+          scoreFiabilite.textContent = `Confiance : ${result.savedScore} % (${result.savedLabel})`;
+        }
+        if (highlightButton) {
+          highlightButton.style.backgroundColor = result.savedColor;
+        }
+      }
+    });
+
+  // ✅ Réinitialiser le score
+  if (resetButton) {
+    resetButton.addEventListener("click", () => {
+      browser.storage.local
+        .remove(["savedScore", "savedLabel", "savedColor"])
+        .then(() => {
+          if (scoreFiabilite) {
+            scoreFiabilite.textContent = "Score réinitialisé.";
+          }
+          if (highlightButton) {
+            highlightButton.style.backgroundColor = ""; // réinitialise la couleur
+          }
+          console.log("Score réinitialisé.");
+        });
+    });
+  }
+
+  // 🎯 Lancer l’analyse
   if (highlightButton) {
     highlightButton.addEventListener("click", () => {
       console.log("Highlight button clicked");
@@ -11,7 +45,6 @@ document.addEventListener("DOMContentLoaded", (event) => {
         evaluer.style.display = "block";
       }
 
-      // Extraire et envoyer les liens pour analyse par l'API
       browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
         if (tabs[0]) {
           browser.tabs
@@ -27,45 +60,40 @@ document.addEventListener("DOMContentLoaded", (event) => {
     });
   }
 
-  // Écouter les messages pour afficher le score global
+  // 🎯 Réception du score
   browser.runtime.onMessage.addListener((message) => {
-    console.log("Message reçu dans accueil.js :", message);
     if (message.action === "displayScore") {
-      console.log("Score received:", message.globalScore);
-      const scoreFiabilite = document.getElementById("scoreFiabilite");
+      const rawScore = parseFloat(message.globalScore);
+      const scorePourcent = Math.round(rawScore * 100); // arrondi au pourcentage
+
+      let label = "";
+      let color = "";
+
+      if (scorePourcent < 45) {
+        label = "Pas Fiable";
+        color = "red";
+      } else if (scorePourcent >= 45 && scorePourcent < 60) {
+        label = "Moyen";
+        color = "orange";
+      } else {
+        label = "Fiable";
+        color = "green";
+      }
 
       if (scoreFiabilite) {
-        if (scoreFiabilite) {
-          const scoreSur10 = (parseFloat(message.globalScore) * 100).toFixed(1);
-          scoreFiabilite.textContent = `Confiance : ${scoreSur10}`;
-        }
-        console.log("Score affiché dans le popup :", message.globalScore);
+        scoreFiabilite.textContent = `Confiance : ${scorePourcent} % (${label})`;
       }
 
-      let color;
-      const score = (parseFloat(message.globalScore) * 100).toFixed(1);
-
-      if (!isNaN(score)) {
-        let color;
-
-        if (score < 45) {
-          color = "red";
-        } else if (score >= 45 && score < 60) {
-          color = "orange";
-        } else {
-          color = "green";
-        }
-
-        // Appliquer la couleur au bouton
-        if (highlightButton) {
-          highlightButton.style.backgroundColor = color;
-        }
-      } else {
-        console.warn("Score non numérique reçu :", message.globalScore);
-        if (scoreFiabilite) {
-          scoreFiabilite.textContent = `Erreur lors de l'analyse`;
-        }
+      if (highlightButton) {
+        highlightButton.style.backgroundColor = color;
       }
+
+      // 💾 Sauvegarder dans le stockage
+      browser.storage.local.set({
+        savedScore: scorePourcent,
+        savedLabel: label,
+        savedColor: color,
+      });
     }
   });
 });

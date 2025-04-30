@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
       }
 
       let color;
-      const score = parseFloat(message.globalScore);
+      const score = (parseFloat(message.globalScore) * 100).toFixed(1);
 
       if (!isNaN(score)) {
         let color;

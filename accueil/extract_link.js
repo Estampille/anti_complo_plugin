@@ -109,7 +109,7 @@
       console.log(`Paragraphe ${index + 1} (${wordCount} mots):`, 
         text.substring(0, 50) + "...");
 
-      const enterHandler = () => {
+          const enterHandler = () => {
         console.log("🔍 Survol du paragraphe:", {
           index: index + 1,
           debut: text.substring(0, 50) + "..."
@@ -117,9 +117,9 @@
         TooltipModule.showTooltip(paragraph);
       };
       
-      const leaveHandler = () => {
-        TooltipModule.hideTooltip();
-      };
+          const leaveHandler = () => {
+            TooltipModule.hideTooltip();
+          };
 
       paragraph._tooltipEnterHandler = enterHandler;
       paragraph._tooltipLeaveHandler = leaveHandler;
@@ -135,14 +135,14 @@
       console.log(`🔗 Nombre de liens externes trouvés: ${links.length}`);
 
       links.forEach(link => {
-        const enterHandler = () => {
+          const enterHandler = () => {
           console.log("🔍 Survol du lien:", link.href);
           TooltipModule.showTooltip(link);
         };
         
-        const leaveHandler = () => {
-          TooltipModule.hideTooltip();
-        };
+          const leaveHandler = () => {
+            TooltipModule.hideTooltip();
+          };
 
         link._tooltipEnterHandler = enterHandler;
         link._tooltipLeaveHandler = leaveHandler;

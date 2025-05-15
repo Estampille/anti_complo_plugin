@@ -1,0 +1,607 @@
+/* Global Color Cycling Animation for the entire website
+   This file adds an enchanting and harmonious color cycle to all site elements */
+
+:root {
+  /* Animation timing variables - extra smooth and longer durations */
+  --global-cycle-duration: 20s; /* Longer overall cycle for smoothness */
+  --text-cycle-duration: 15s; /* Longer text cycling for smoother transitions */
+  --heading-cycle-duration: 12s; /* Longer heading cycling */
+  --background-cycle-duration: 30s; /* Slow background color changes */
+  --global-cycle-delay-short: 0.5s;
+  --global-cycle-delay-medium: 1s;
+  --global-cycle-delay-long: 1.5s;
+
+  /* Color cycling intensity variables - balanced for visual harmony */
+  --text-cycle-intensity: 80%; /* Slightly reduced for subtlety */
+  --heading-cycle-intensity: 90%; /* Almost complete color change */
+  --background-cycle-intensity: 10%; /* Subtle background changes */
+  --accent-cycle-intensity: 70%; /* More visible accents */
+  --shadow-cycle-intensity: 60%; /* Dramatic shadows */
+
+  /* Animation curves for maximally smooth transitions */
+  --cycle-curve: cubic-bezier(0.4, 0, 0.2, 1);
+  --text-cycle-curve: cubic-bezier(
+    0.4,
+    0,
+    0.6,
+    1
+  ); /* Extra smooth sine-like curve for text */
+  --background-cycle-curve: cubic-bezier(
+    0.25,
+    0.1,
+    0.25,
+    1
+  ); /* Very smooth for background */
+}
+
+/* Apply color-cycle mode to the whole document */
+.color-cycle-mode {
+  animation: backgroundColorCycle var(--global-cycle-duration) infinite
+    var(--cycle-curve);
+}
+
+.color-cycle-mode * {
+  animation-play-state: running !important;
+}
+
+/* Apply to <body> to enable color cycling for all elements */
+body.color-cycling-enabled {
+  animation: globalBackgroundShift var(--background-cycle-duration) infinite
+    alternate var(--background-cycle-curve);
+}
+
+/* Text color cycling - headings */
+body.color-cycling-enabled h1,
+body.color-cycling-enabled h2,
+body.color-cycling-enabled h3,
+body.color-cycling-enabled h4,
+body.color-cycling-enabled h5,
+body.color-cycling-enabled h6,
+body.color-cycling-enabled .main-title,
+body.color-cycling-enabled .subtitle {
+  animation: headingColorCycle var(--heading-cycle-duration) infinite alternate
+    var(--text-cycle-curve);
+  position: relative;
+}
+
+/* Add subtle text shadow to enhance the color effect */
+body.color-cycling-enabled h1,
+body.color-cycling-enabled h2 {
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Paragraph and regular text cycling - smoother and more harmonious */
+body.color-cycling-enabled p,
+body.color-cycling-enabled li,
+body.color-cycling-enabled span:not(.color-cycle-icon),
+body.color-cycling-enabled a:not(.navbar-link):not(.social-link),
+body.color-cycling-enabled div,
+body.color-cycling-enabled label,
+body.color-cycling-enabled blockquote,
+body.color-cycling-enabled cite,
+body.color-cycling-enabled figcaption {
+  animation: textColorCycle var(--text-cycle-duration) infinite alternate
+    var(--text-cycle-curve);
+  animation-delay: var(--global-cycle-delay-short);
+}
+
+/* More prominent text elements */
+body.color-cycling-enabled .hero-subtitle,
+body.color-cycling-enabled .subtitle,
+body.color-cycling-enabled strong,
+body.color-cycling-enabled b,
+body.color-cycling-enabled .fonction,
+body.color-cycling-enabled .team-card-name,
+body.color-cycling-enabled .member-role,
+body.color-cycling-enabled .contact-card-title,
+body.color-cycling-enabled .navbar-link,
+body.color-cycling-enabled .navbar-logo a,
+body.color-cycling-enabled .member-image + h3,
+body.color-cycling-enabled .highlight strong {
+  animation: accentTextColorCycle var(--heading-cycle-duration) infinite
+    alternate var(--text-cycle-curve);
+}
+
+/* Enchanted UI elements */
+body.color-cycling-enabled .card,
+body.color-cycling-enabled .presentation,
+body.color-cycling-enabled .objectifs,
+body.color-cycling-enabled .equipe,
+body.color-cycling-enabled .contact,
+body.color-cycling-enabled .feature-card,
+body.color-cycling-enabled .team-card,
+body.color-cycling-enabled .contact-card,
+body.color-cycling-enabled .hero-background,
+body.color-cycling-enabled .membre,
+body.color-cycling-enabled nav {
+  animation: backgroundColorCycle calc(var(--global-cycle-duration) * 1.3)
+    infinite alternate var(--cycle-curve);
+  animation-delay: var(--global-cycle-delay-medium);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Enchanted UI elements overlay for sparkle effect */
+body.color-cycling-enabled .card::after,
+body.color-cycling-enabled .presentation::after,
+body.color-cycling-enabled .objectifs::after,
+body.color-cycling-enabled .equipe::after,
+body.color-cycling-enabled .contact::after,
+body.color-cycling-enabled .feature-card::after,
+body.color-cycling-enabled .team-card::after,
+body.color-cycling-enabled .contact-card::after,
+body.color-cycling-enabled .membre::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
+  );
+  transform: rotate(30deg);
+  animation:
+    cardShine 15s ease-in-out infinite,
+    shineColorCycle calc(var(--global-cycle-duration) * 1.5) infinite alternate
+      var(--cycle-curve);
+  animation-delay: var(--global-cycle-delay-long);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Cycle border colors */
+body.color-cycling-enabled .membre img,
+body.color-cycling-enabled .team-card-avatar,
+body.color-cycling-enabled .hero-logo,
+body.color-cycling-enabled .team-card-role,
+body.color-cycling-enabled .membre h4 a,
+body.color-cycling-enabled button,
+body.color-cycling-enabled a.social-link,
+body.color-cycling-enabled .fonction {
+  animation: borderColorCycle calc(var(--global-cycle-duration) * 0.8) infinite
+    alternate var(--cycle-curve);
+  animation-delay: var(--global-cycle-delay-medium);
+}
+
+/* Special animation for gradients - slower and more enchanting */
+body.color-cycling-enabled [class*="gradient"],
+body.color-cycling-enabled .hero-title,
+body.color-cycling-enabled .titre h1,
+body.color-cycling-enabled .main-title {
+  animation: gradientColorCycle calc(var(--heading-cycle-duration) * 1.5)
+    infinite alternate var(--text-cycle-curve);
+}
+
+/* Shadow color cycling */
+body.color-cycling-enabled .elevation-1,
+body.color-cycling-enabled .elevation-2,
+body.color-cycling-enabled .elevation-3,
+body.color-cycling-enabled .elevation-4,
+body.color-cycling-enabled .elevation-5,
+body.color-cycling-enabled .md-card,
+body.color-cycling-enabled .md-button,
+body.color-cycling-enabled .md-fab {
+  animation: shadowColorCycle calc(var(--global-cycle-duration) * 0.9) infinite
+    alternate var(--cycle-curve);
+  animation-delay: var(--global-cycle-delay-short);
+}
+
+/* Logo and important visual elements */
+body.color-cycling-enabled .logo,
+body.color-cycling-enabled .hero-logo img {
+  animation:
+    logoColorPulse calc(var(--global-cycle-duration) * 0.7) infinite alternate
+      var(--cycle-curve),
+    logoScale 15s infinite alternate ease-in-out;
+}
+
+/* Color cycling keyframes */
+
+@keyframes globalBackgroundShift {
+  0% {
+    background-color: var(--background-color);
+  }
+  20% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color),
+      var(--primary-color) calc(var(--background-cycle-intensity) * 0.7)
+    );
+  }
+  40% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color),
+      var(--primary-color) var(--background-cycle-intensity)
+    );
+  }
+  60% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color),
+      var(--secondary-color) calc(var(--background-cycle-intensity) * 0.8)
+    );
+  }
+  80% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color),
+      var(--accent-color) calc(var(--background-cycle-intensity) * 0.9)
+    );
+  }
+  100% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color),
+      var(--accent-color) var(--background-cycle-intensity)
+    );
+  }
+}
+
+/* More refined and harmonious keyframes for text elements */
+@keyframes textColorCycle {
+  0% {
+    color: var(--text-color);
+  }
+  10% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--primary-color) calc(var(--text-cycle-intensity) * 0.4)
+    );
+  }
+  25% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--primary-color) var(--text-cycle-intensity)
+    );
+  }
+  40% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--secondary-color) calc(var(--text-cycle-intensity) * 0.6)
+    );
+  }
+  50% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--secondary-color) var(--text-cycle-intensity)
+    );
+  }
+  65% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--accent-color) calc(var(--text-cycle-intensity) * 0.7)
+    );
+  }
+  75% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--accent-color) var(--text-cycle-intensity)
+    );
+  }
+  85% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--hover-color) calc(var(--text-cycle-intensity) * 0.6)
+    );
+  }
+  95% {
+    color: color-mix(
+      in hsl,
+      var(--text-color),
+      var(--hover-color) calc(var(--text-cycle-intensity) * 0.3)
+    );
+  }
+  100% {
+    color: var(--text-color);
+  }
+}
+
+@keyframes headingColorCycle {
+  0% {
+    color: var(--primary-color);
+    text-shadow: 0 0 2px rgba(160, 92, 47, 0.3);
+  }
+  12.5% {
+    color: color-mix(in hsl, var(--primary-color), var(--secondary-color) 40%);
+    text-shadow: 0 0 2px rgba(190, 110, 60, 0.3);
+  }
+  25% {
+    color: var(--secondary-color);
+    text-shadow: 0 0 2px rgba(227, 139, 79, 0.3);
+  }
+  37.5% {
+    color: color-mix(in hsl, var(--secondary-color), var(--accent-color) 40%);
+    text-shadow: 0 0 2px rgba(215, 136, 70, 0.3);
+  }
+  50% {
+    color: var(--accent-color);
+    text-shadow: 0 0 2px rgba(205, 133, 63, 0.3);
+  }
+  62.5% {
+    color: color-mix(in hsl, var(--accent-color), var(--hover-color) 40%);
+    text-shadow: 0 0 2px rgba(225, 110, 90, 0.3);
+  }
+  75% {
+    color: var(--hover-color);
+    text-shadow: 0 0 2px rgba(255, 64, 129, 0.3);
+  }
+  87.5% {
+    color: color-mix(in hsl, var(--hover-color), var(--primary-color) 60%);
+    text-shadow: 0 0 2px rgba(200, 80, 80, 0.3);
+  }
+  100% {
+    color: var(--primary-color);
+    text-shadow: 0 0 2px rgba(160, 92, 47, 0.3);
+  }
+}
+
+@keyframes accentTextColorCycle {
+  0% {
+    color: var(--secondary-color);
+    text-shadow: 0 0 1px rgba(227, 139, 79, 0.2);
+  }
+  12.5% {
+    color: color-mix(in hsl, var(--secondary-color), var(--accent-color) 30%);
+    text-shadow: 0 0 1px rgba(220, 137, 75, 0.2);
+  }
+  25% {
+    color: var(--accent-color);
+    text-shadow: 0 0 1px rgba(205, 133, 63, 0.2);
+  }
+  37.5% {
+    color: color-mix(in hsl, var(--accent-color), var(--hover-color) 30%);
+    text-shadow: 0 0 1px rgba(220, 110, 90, 0.2);
+  }
+  50% {
+    color: var(--hover-color);
+    text-shadow: 0 0 1px rgba(255, 64, 129, 0.2);
+  }
+  62.5% {
+    color: color-mix(in hsl, var(--hover-color), var(--primary-color) 30%);
+    text-shadow: 0 0 1px rgba(220, 75, 80, 0.2);
+  }
+  75% {
+    color: var(--primary-color);
+    text-shadow: 0 0 1px rgba(160, 92, 47, 0.2);
+  }
+  87.5% {
+    color: color-mix(in hsl, var(--primary-color), var(--secondary-color) 50%);
+    text-shadow: 0 0 1px rgba(190, 115, 60, 0.2);
+  }
+  100% {
+    color: var(--secondary-color);
+    text-shadow: 0 0 1px rgba(227, 139, 79, 0.2);
+  }
+}
+
+@keyframes backgroundColorCycle {
+  0% {
+    background-color: var(--card-bg-color);
+  }
+  33% {
+    background-color: color-mix(
+      in hsl,
+      var(--card-bg-color),
+      var(--primary-color) var(--background-cycle-intensity)
+    );
+  }
+  66% {
+    background-color: color-mix(
+      in hsl,
+      var(--card-bg-color),
+      var(--secondary-color) var(--background-cycle-intensity)
+    );
+  }
+  100% {
+    background-color: color-mix(
+      in hsl,
+      var(--card-bg-color),
+      var(--accent-color) var(--background-cycle-intensity)
+    );
+  }
+}
+
+@keyframes borderColorCycle {
+  0% {
+    border-color: var(--primary-color);
+  }
+  33% {
+    border-color: var(--secondary-color);
+  }
+  66% {
+    border-color: var(--accent-color);
+  }
+  100% {
+    border-color: var(--hover-color);
+  }
+}
+
+@keyframes gradientColorCycle {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  33% {
+    filter: hue-rotate(20deg);
+  }
+  66% {
+    filter: hue-rotate(40deg);
+  }
+  100% {
+    filter: hue-rotate(60deg);
+  }
+}
+
+@keyframes shadowColorCycle {
+  0% {
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.15);
+  }
+  33% {
+    box-shadow: 0 5px 15px rgba(160, 92, 47, 0.15);
+  }
+  66% {
+    box-shadow: 0 5px 15px rgba(227, 139, 79, 0.15);
+  }
+  100% {
+    box-shadow: 0 5px 15px rgba(205, 133, 63, 0.15);
+  }
+}
+
+@keyframes logoColorPulse {
+  0% {
+    filter: drop-shadow(0 0 15px rgba(160, 92, 47, 0.7)) brightness(1)
+      hue-rotate(0deg);
+  }
+  33% {
+    filter: drop-shadow(0 0 20px rgba(227, 139, 79, 0.7)) brightness(1.05)
+      hue-rotate(10deg);
+  }
+  66% {
+    filter: drop-shadow(0 0 25px rgba(205, 133, 63, 0.7)) brightness(1.1)
+      hue-rotate(30deg);
+  }
+  100% {
+    filter: drop-shadow(0 0 20px rgba(255, 64, 129, 0.7)) brightness(1.05)
+      hue-rotate(45deg);
+  }
+}
+
+@keyframes logoScale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cardShine {
+  0% {
+    transform: rotate(30deg) translate(-300px, -200px);
+  }
+  100% {
+    transform: rotate(30deg) translate(500px, 200px);
+  }
+}
+
+@keyframes shineColorCycle {
+  0% {
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0),
+      rgba(160, 92, 47, 0.1),
+      rgba(255, 255, 255, 0)
+    );
+  }
+  33% {
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0),
+      rgba(227, 139, 79, 0.1),
+      rgba(255, 255, 255, 0)
+    );
+  }
+  66% {
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0),
+      rgba(205, 133, 63, 0.1),
+      rgba(255, 255, 255, 0)
+    );
+  }
+  100% {
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0),
+      rgba(255, 64, 129, 0.1),
+      rgba(255, 255, 255, 0)
+    );
+  }
+}
+
+/* Enchanted background animation */
+body.color-cycling-enabled:before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(160, 92, 47, 0.03) 2px,
+      transparent 15px
+    ),
+    radial-gradient(
+      circle at 15% 15%,
+      rgba(227, 139, 79, 0.02) 3px,
+      transparent 15px
+    ),
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(205, 133, 63, 0.03) 2px,
+      transparent 10px
+    );
+  background-size:
+    120px 120px,
+    170px 170px,
+    200px 200px;
+  background-position: 0 0;
+  animation: backgroundPatternShift 60s infinite linear;
+  z-index: -1;
+  opacity: 0.4;
+}
+
+@keyframes backgroundPatternShift {
+  0% {
+    background-position:
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
+  100% {
+    background-position:
+      200% 200%,
+      150% 150%,
+      100% 100%;
+  }
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  :root {
+    --global-cycle-duration: 25s;
+    --text-cycle-intensity: 8%;
+    --background-cycle-intensity: 6%;
+    --accent-cycle-intensity: 12%;
+  }
+}
+
+@media (prefers-reduced-motion) {
+  body.color-cycling-enabled,
+  body.color-cycling-enabled * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

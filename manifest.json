@@ -6,38 +6,49 @@
   "action": {
     "default_popup": "accueil/accueil.html",
     "default_icon": {
-      "48": "images/icon48.png"
+      "48": "images/icon48.png",
+      "16": "images/icon16.png"
     }
   },
   "icons": {
     "16": "images/icon16.png",
-    "48": "images/icon48.png"
+    "48": "images/icon48.png",
+    "128": "images/icon48.png"
   },
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["<all_urls>", "http://localhost:5001/*"],
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost:5001/*"
+  ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "type": "module"
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "check-my-link@example.com"
+      "id": "check-my-link@example.com",
+      "strict_min_version": "109.0"
     }
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": [
-        "accueil/modules/tooltip.js",
         "accueil/modules/scores.js",
+        "accueil/modules/tooltip.js",
         "accueil/extract_link.js"
       ],
       "css": ["accueil/infobulles.css"]
     }
   ],
-  "web_accessible_resources": [
-    {
-      "resources": ["accueil/infobulles.css"],
+  "web_accessible_resources": [{
+    "resources": [
+      "accueil/infobulles.css",
+      "images/*"
+    ],
       "matches": ["<all_urls>"]
-    }
-  ]
+  }]
 }

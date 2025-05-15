@@ -1,0 +1,75 @@
+/* 
+ * Compatibility fixes for Builder.io integration
+ * This file ensures all styles work correctly with the Builder.io editor
+ */
+
+/* Fix for Builder.io component rendering */
+[builder-element] * {
+  animation: none !important;
+}
+
+/* Prevent animation conflicts in Builder.io context */
+.builder-editor,
+.builder-editor * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Ensure logo styling works in all contexts */
+.logo,
+img[alt="Prisme d'Ariane logo"],
+[builder-element] img.logo {
+  background-color: transparent !important;
+  mix-blend-mode: multiply !important;
+  filter: drop-shadow(0 0 15px rgba(160, 92, 47, 0.6)) !important;
+}
+
+/* Fix text color specificity for Builder.io elements */
+[builder-element] h1,
+[builder-element] h2,
+[builder-element] h3,
+[builder-element] h4,
+[builder-element] h5,
+[builder-element] h6,
+[builder-element] p,
+[builder-element] span,
+[builder-element] div {
+  color: inherit;
+}
+
+/* Fix box-model issues in Builder.io */
+[builder-element] {
+  box-sizing: border-box;
+}
+
+/* Ensure proper background rendering */
+[builder-element] .card,
+[builder-element] .presentation,
+[builder-element] .membre,
+[builder-element] .contact-item {
+  background-color: var(--card-bg-color, #ffffff) !important;
+}
+
+/* Fix for pseudo-elements in Builder.io context */
+[builder-element]:before,
+[builder-element]:after {
+  content: none !important;
+}
+
+/* Disabling animations for specific problematic elements */
+body.color-cycling-enabled [builder-element],
+body.color-cycling-enabled [builder-element] * {
+  animation: none !important;
+}
+
+/* Provide fallback colors for all CSS variables used in animations */
+:root {
+  /* Fallback colors in case variables aren't loaded yet */
+  --primary-color-fallback: #a05c2f;
+  --secondary-color-fallback: #e38b4f;
+  --accent-color-fallback: #cd853f;
+  --background-color-fallback: #f8e7dd;
+  --text-color-fallback: #5a3825;
+  --card-bg-color-fallback: #ffffff;
+  --hover-color-fallback: #ff4081;
+}

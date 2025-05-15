@@ -1,62 +1,94 @@
-// Créer un namespace global pour les scores
-window.ScoresModule = (function () {
-  // Conserver le score global renvoyé par l'API
-  let apiGlobalScore = null;
+// Module de gestion des scores
+window.ScoresModule = (function() {
+  // Cache pour stocker les scores déjà calculés
+  const scoreCache = new Map();
 
-  // Cette fonction sera appelée avec les données de l'API
-  function updateWithApiData(scoreData) {
-    apiGlobalScore = scoreData.globalScore;
-    return apiGlobalScore;
-  }
-
-  // Calculer le score moyen global - maintenant utilise la valeur de l'API si disponible
-  function calculateAverageScore() {
-    if (apiGlobalScore !== null) {
-      return apiGlobalScore;
+  // Fonction pour normaliser un score
+  function normalizeScore(score) {
+    if (typeof score === 'string') {
+      score = parseFloat(score);
     }
-    return "0.00"; // Valeur par défaut si l'API n'a pas encore répondu
+    
+    if (isNaN(score)) {
+      return null;
   }
 
-  // Attacher les écouteurs d'événements pour les infobulles
-  function attachEventListeners(elements, showTooltip, hideTooltip) {
-    // Nettoyer les anciens écouteurs
-    elements.forEach((element) => {
-      if (element._tooltipEnterHandler) {
-        element.removeEventListener("mouseenter", element._tooltipEnterHandler);
-      }
+    // Limiter le score entre 0 et 100
+    return Math.min(Math.max(score, 0), 100);
+  }
 
-      if (element._tooltipLeaveHandler) {
-        element.removeEventListener("mouseleave", element._tooltipLeaveHandler);
-      }
-    });
+  // Fonction pour obtenir la classe de score
+  function getScoreClass(score) {
+    score = normalizeScore(score);
+    
+    if (score === null) {
+      return 'neutral';
+    }
+    
+    if (score < 45) {
+      return 'low';
+    } else if (score < 70) {
+      return 'medium';
+    } else {
+      return 'high';
+    }
+  }
 
-    // Attacher de nouveaux écouteurs
-    elements.forEach((element) => {
-      // Utiliser le score global de l'API pour toutes les infobulles
-      // Gestionnaire d'entrée de souris
-      const enterHandler = () => {
-        showTooltip(element, apiGlobalScore || "En attente...");
-      };
+  // Fonction pour formater le texte du score
+  function formatScoreText(score, details = null) {
+    score = normalizeScore(score);
+    
+    if (score === null) {
+      return 'Score non disponible';
+    }
 
-      // Gestionnaire de sortie de souris
-      const leaveHandler = () => {
-        hideTooltip();
-      };
+    let text = `Score de confiance: ${score}%`;
+    
+    if (details) {
+      text += `\n${details}`;
+    }
+    
+    return text;
+  }
 
-      // Stocker les références pour pouvoir les supprimer plus tard
-      element._tooltipEnterHandler = enterHandler;
-      element._tooltipLeaveHandler = leaveHandler;
-
-      // Attacher les écouteurs
-      element.addEventListener("mouseenter", enterHandler);
-      element.addEventListener("mouseleave", leaveHandler);
+  // Fonction pour mettre en cache un score
+  function cacheScore(url, score, details = null) {
+    scoreCache.set(url, {
+      score,
+      details,
+      timestamp: Date.now()
     });
   }
 
-  // Exposer les fonctions publiques
+  // Fonction pour récupérer un score du cache
+  function getCachedScore(url) {
+    const cached = scoreCache.get(url);
+    
+    if (!cached) {
+      return null;
+    }
+
+    // Vérifier si le cache est encore valide (30 minutes)
+    if (Date.now() - cached.timestamp > 30 * 60 * 1000) {
+      scoreCache.delete(url);
+      return null;
+    }
+
+    return cached;
+  }
+
+  // Fonction pour nettoyer le cache
+  function clearCache() {
+    scoreCache.clear();
+  }
+
+  // API publique
   return {
-    updateWithApiData: updateWithApiData,
-    calculateAverageScore: calculateAverageScore,
-    attachEventListeners: attachEventListeners,
+    normalizeScore,
+    getScoreClass,
+    formatScoreText,
+    cacheScore,
+    getCachedScore,
+    clearCache
   };
 })();

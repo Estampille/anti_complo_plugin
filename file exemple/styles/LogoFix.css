@@ -1,0 +1,101 @@
+/* Additional CSS to remove white background from the logo */
+.logo,
+img[alt="Prisme d'Ariane logo"] {
+  /* Apply transparent background and blend mode */
+  background-color: transparent !important;
+  mix-blend-mode: multiply;
+  /* Add webkit-specific background clip */
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  /* Remove any box shadows that might create visible edges */
+  box-shadow: none !important;
+  /* Remove any borders */
+  border: none !important;
+}
+
+/* Specific fix for Builder.io components */
+[builder-element],
+[builder-element] img,
+img[builder-element] {
+  background-color: transparent !important;
+}
+
+/* Prevent animation conflicts by prioritizing one animation */
+body .logo,
+body img[alt="Prisme d'Ariane logo"] {
+  animation-name: logoFix !important;
+  animation-duration: 7s !important;
+  animation-iteration-count: infinite !important;
+  animation-timing-function: ease-in-out !important;
+  animation-direction: alternate !important;
+}
+
+@keyframes logoFix {
+  0% {
+    filter: drop-shadow(0 0 20px rgba(160, 92, 47, 0.7));
+    transform: scale(1);
+  }
+  20% {
+    filter: drop-shadow(0 0 25px rgba(227, 139, 79, 0.8));
+    transform: scale(1.02);
+  }
+  40% {
+    filter: drop-shadow(0 0 30px rgba(205, 133, 63, 0.9));
+    transform: scale(1.04);
+  }
+  60% {
+    filter: drop-shadow(0 0 30px rgba(255, 64, 129, 0.9));
+    transform: scale(1.05);
+  }
+  80% {
+    filter: drop-shadow(0 0 25px rgba(33, 150, 243, 0.8));
+    transform: scale(1.03);
+  }
+  100% {
+    filter: drop-shadow(0 0 20px rgba(76, 175, 80, 0.7));
+    transform: scale(1);
+  }
+}
+
+/* More specific selectors to avoid conflicts */
+body:not(.builder-editor) {
+  transition: background-color 2s ease-in-out;
+}
+
+/* Disable background animation when Builder.io editor is active */
+.builder-editor body,
+body.builder-editor {
+  animation: none !important;
+}
+
+/* Use more specific selectors for background animation */
+body:not(.builder-editor):not(.color-cycling-enabled) {
+  animation: safeBackgroundPulse 30s infinite alternate;
+}
+
+@keyframes safeBackgroundPulse {
+  0% {
+    background-color: var(--background-color, #f8e7dd);
+  }
+  33% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color, #f8e7dd),
+      rgba(160, 92, 47, 1) 7%
+    );
+  }
+  66% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color, #f8e7dd),
+      rgba(227, 139, 79, 1) 5%
+    );
+  }
+  100% {
+    background-color: color-mix(
+      in hsl,
+      var(--background-color, #f8e7dd),
+      rgba(205, 133, 63, 1) 6%
+    );
+  }
+}

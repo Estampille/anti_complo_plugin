@@ -1,0 +1,141 @@
+/* Text Color Cycling Animation - Enhanced Version
+   This file creates more visible and automatic color changes for text elements */
+
+/* Enable this animation by default without requiring toggle */
+body {
+  --text-animation-intensity: 30%; /* Much higher intensity for visibility */
+  --heading-animation-intensity: 40%; /* Even higher for headings */
+  --animation-speed: 8s; /* Faster animation to be more noticeable */
+}
+
+/* Apply animations to all text elements by default */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.hero-title,
+.main-title,
+.titre h1,
+.hero-subtitle,
+.subtitle {
+  animation: headingColorShift var(--animation-speed) infinite alternate
+    ease-in-out;
+  transition: color 0.5s ease;
+}
+
+p,
+li,
+span,
+a:not(.navbar-logo),
+.team-card-name,
+.contact-card-title,
+.feature-card-header,
+.fonction,
+.member-role {
+  animation: textColorShift calc(var(--animation-speed) * 1.2) infinite
+    alternate ease-in-out;
+  transition: color 0.5s ease;
+}
+
+/* More dramatic, highly visible color animations */
+@keyframes headingColorShift {
+  0% {
+    color: var(--primary-color);
+  }
+  33% {
+    color: var(--secondary-color);
+  }
+  66% {
+    color: var(--accent-color);
+  }
+  100% {
+    color: var(--hover-color);
+  }
+}
+
+@keyframes textColorShift {
+  0% {
+    color: var(--text-color);
+  }
+  33% {
+    color: var(--primary-color);
+  }
+  66% {
+    color: var(--secondary-color);
+  }
+  100% {
+    color: var(--accent-color);
+  }
+}
+
+/* Special handling for gradient text */
+.hero-title,
+.titre h1,
+.main-title {
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--secondary-color),
+    var(--accent-color),
+    var(--hover-color)
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientMove var(--animation-speed) infinite alternate ease-in-out;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Add subtle pulsing effect to make changes more noticeable */
+h1,
+h2,
+.hero-title,
+.main-title {
+  animation: headingPulse calc(var(--animation-speed) * 0.5) infinite alternate
+    ease-in-out;
+}
+
+@keyframes headingPulse {
+  0% {
+    text-shadow: 0 0 1px rgba(160, 92, 47, 0.2);
+  }
+  50% {
+    text-shadow: 0 0 3px rgba(227, 139, 79, 0.4);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(205, 133, 63, 0.6);
+  }
+}
+
+/* Override for dark theme */
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+.dark-theme h5,
+.dark-theme h6 {
+  text-shadow: 0 0 5px rgba(205, 133, 63, 0.3);
+}
+
+/* Ensure animations run even when browser tab is not active */
+* {
+  animation-play-state: running !important;
+}
+
+/* Make sure this is applied regardless of user preferences */
+@media (prefers-reduced-motion) {
+  * {
+    animation-play-state: running !important;
+  }
+}

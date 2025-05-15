@@ -1,0 +1,627 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.logo {
+  height: 16em; /* Increased from 10em for an even bigger logo */
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+  animation: logoColorPulse 6s infinite; /* Faster animation and no alternate for continuous cycle */
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2.5em var(--secondary-color));
+  /* Animation continues on hover - removed the paused state */
+}
+
+@keyframes logoColorPulse {
+  0% {
+    filter: drop-shadow(0 0 1.5em rgba(160, 92, 47, 0.7)) brightness(1);
+  }
+  20% {
+    filter: drop-shadow(0 0 2em rgba(227, 139, 79, 0.8)) brightness(1.05);
+  }
+  40% {
+    filter: drop-shadow(0 0 2.5em rgba(205, 133, 63, 0.9)) brightness(1.1);
+  }
+  60% {
+    filter: drop-shadow(0 0 2.5em rgba(255, 64, 129, 0.9)) brightness(1.1);
+  }
+  80% {
+    filter: drop-shadow(0 0 2em rgba(33, 150, 243, 0.8)) brightness(1.05);
+  }
+  100% {
+    filter: drop-shadow(0 0 1.5em rgba(76, 175, 80, 0.7)) brightness(1);
+  }
+}
+
+.titre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.titre::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: var(--gradient-accent);
+  border-radius: 2px;
+}
+
+.titre h1 {
+  font-size: 4rem;
+  margin: 0;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: colorChange 8s infinite alternate;
+}
+
+@keyframes colorChange {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(30deg);
+  }
+}
+
+/* Main background with subtle pattern */
+body {
+  background-color: var(--background-color);
+  background-image:
+    radial-gradient(
+      circle at 25% 25%,
+      rgba(var(--card-bg-color-rgb), 0.03) 2%,
+      transparent 10%
+    ),
+    radial-gradient(
+      circle at 75% 75%,
+      rgba(var(--card-bg-color-rgb), 0.03) 2%,
+      transparent 10%
+    );
+  background-size: 50px 50px;
+}
+
+.card {
+  padding: 2em;
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--elevation-2);
+  transition: all 0.3s ease;
+}
+
+/* Styles for the sections */
+main {
+  padding: 0 2rem;
+}
+
+main section {
+  margin-bottom: 4rem;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main section:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+main section:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+main h2 {
+  color: var(--primary-color);
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+main h2::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: var(--gradient-accent);
+  border-radius: 1.5px;
+}
+
+main h3 {
+  color: var(--secondary-color);
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+main h4 {
+  color: var(--accent-color);
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+}
+
+/* Styles for the sections */
+.section-intro {
+  margin-bottom: 2rem;
+}
+
+.presentation,
+.objectifs,
+.equipe,
+.contact {
+  background-color: var(--card-bg-color);
+  padding: 2.5rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--elevation-2);
+  margin-bottom: 3rem;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Add subtle background pattern to cards */
+.presentation,
+.objectifs,
+.equipe,
+.contact {
+  background-image: linear-gradient(
+    to bottom right,
+    rgba(var(--card-bg-color-rgb), 0.8),
+    rgba(var(--card-bg-color-rgb), 1)
+  );
+}
+
+.presentation:hover,
+.objectifs:hover,
+.equipe:hover,
+.contact:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--elevation-3);
+}
+
+.presentation h2,
+.objectifs h2,
+.equipe h2,
+.contact h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 2rem;
+}
+
+/* Remove the blue left border, add material design styling */
+.presentation p,
+.objectifs p {
+  text-align: justify;
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.3s ease;
+  background-color: rgba(var(--card-bg-color-rgb), 0.6);
+}
+
+.presentation p:hover,
+.objectifs p:hover {
+  background-color: rgba(var(--card-bg-color-rgb), 0.8);
+  box-shadow: var(--elevation-1);
+}
+
+/* Highlight text with gradient background */
+.highlight {
+  position: relative;
+  background: linear-gradient(
+    to right,
+    rgba(var(--card-bg-color-rgb), 0.8),
+    rgba(var(--card-bg-color-rgb), 0.9)
+  );
+  border-radius: var(--border-radius-md);
+  padding: 1.2rem 1.5rem !important;
+  margin: 1.5rem 0;
+  box-shadow: var(--elevation-1);
+  border-left: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-primary);
+}
+
+/* Points clés */
+.key-points {
+  margin: 2rem 0;
+  padding-left: 1.5rem;
+}
+
+.key-points li {
+  margin-bottom: 1.2rem;
+  position: relative;
+  padding-left: 1.8rem;
+  list-style-type: none;
+  color: var(--text-color);
+  transition: transform 0.2s ease;
+}
+
+.key-points li:hover {
+  transform: translateX(5px);
+}
+
+.key-points li:before {
+  content: "•";
+  color: var(--secondary-color);
+  font-weight: bold;
+  font-size: 1.8rem;
+  position: absolute;
+  left: 0;
+  top: -0.5rem;
+}
+
+.key-points li strong {
+  color: var(--primary-color);
+}
+
+/* Styles pour la section équipe */
+.membres-equipe {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.membre {
+  flex: 1;
+  min-width: 280px;
+  background-color: var(--card-bg-color);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--elevation-2);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.membre::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: var(--gradient-accent);
+}
+
+.membre:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--elevation-4);
+}
+
+.membre h3 {
+  color: var(--primary-color);
+  margin-bottom: 0.8rem;
+  font-size: 1.8rem;
+}
+
+.membre img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 1rem auto;
+  display: block;
+  border: 4px solid var(--secondary-color);
+  transition: all 0.3s ease;
+  box-shadow: var(--elevation-2);
+}
+
+.membre:hover img {
+  transform: scale(1.05);
+  border-color: var(--accent-color);
+  box-shadow: var(--elevation-3);
+}
+
+.fonction {
+  color: var(--secondary-color);
+  font-weight: 600;
+  margin-bottom: 1.2rem;
+  font-size: 1.2rem;
+  background-color: rgba(var(--card-bg-color-rgb), 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md);
+  display: inline-block;
+  box-shadow: var(--elevation-1);
+}
+
+.membre p {
+  text-align: justify;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.membre h4 {
+  margin-top: 1rem;
+}
+
+.membre h4 a {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: var(--gradient-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--border-radius-md);
+  transition: all 0.3s ease;
+  box-shadow: var(--elevation-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.membre h4 a:after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.3) 10%,
+    transparent 10.01%
+  );
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition:
+    transform 0.5s,
+    opacity 1s;
+}
+
+.membre h4 a:active:after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+.membre h4 a:hover {
+  background: var(--gradient-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-2);
+}
+
+/* Styles pour la section contact */
+.coordonnees {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.adresse,
+.contact-info,
+.horaires {
+  flex: 1;
+  min-width: 250px;
+  background-color: var(--card-bg-color);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--elevation-2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.adresse::before,
+.contact-info::before,
+.horaires::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+}
+
+.adresse::before {
+  background: var(--gradient-primary);
+}
+
+.contact-info::before {
+  background: var(--gradient-accent);
+}
+
+.horaires::before {
+  background: var(--gradient-cool);
+}
+
+.adresse:hover,
+.contact-info:hover,
+.horaires:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--elevation-3);
+}
+
+.adresse h3,
+.contact-info h3,
+.horaires h3 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.adresse p,
+.contact-info p,
+.horaires p {
+  margin: 0.8rem 0;
+  font-size: 1.1rem;
+  padding: 0;
+  text-align: center;
+}
+
+/* Card reveal effect */
+@keyframes cardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.presentation,
+.objectifs,
+.equipe,
+.contact {
+  animation: cardReveal 0.5s forwards;
+}
+
+.presentation {
+  animation-delay: 0.1s;
+}
+
+.objectifs {
+  animation-delay: 0.2s;
+}
+
+.equipe {
+  animation-delay: 0.3s;
+}
+
+.contact {
+  animation-delay: 0.4s;
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+  .titre h1 {
+    font-size: 3rem;
+  }
+
+  .presentation h2,
+  .objectifs h2,
+  .equipe h2,
+  .contact h2 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .membres-equipe,
+  .coordonnees {
+    flex-direction: column;
+  }
+
+  .membre,
+  .adresse,
+  .contact-info,
+  .horaires {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .titre {
+    flex-direction: column;
+  }
+
+  .titre h1 {
+    font-size: 2.5rem;
+  }
+
+  .logo {
+    height: 4em;
+    padding: 1em;
+  }
+
+  .presentation,
+  .objectifs,
+  .equipe,
+  .contact {
+    padding: 1.5rem;
+  }
+
+  .highlight {
+    padding: 1rem !important;
+  }
+
+  main {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .titre h1 {
+    font-size: 2rem;
+  }
+
+  .logo {
+    height: 3.5em;
+    padding: 0.8em;
+  }
+
+  .presentation p,
+  .objectifs p {
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0.5rem;
+  }
+
+  .highlight {
+    padding: 0.8rem !important;
+  }
+
+  .membre {
+    padding: 1.5rem;
+  }
+
+  .membre img {
+    width: 120px;
+    height: 120px;
+  }
+
+  .adresse,
+  .contact-info,
+  .horaires {
+    padding: 1.5rem;
+  }
+}

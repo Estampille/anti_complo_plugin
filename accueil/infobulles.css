@@ -1,0 +1,176 @@
+@import "./styles/theme.css";
+
+/* Style pour les éléments qui ont des infobulles */
+.has-tooltip {
+  cursor: help;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.has-tooltip:hover {
+  background-color: rgba(var(--card-bg-color-rgb), 0.15);
+}
+
+/* Styles des infobulles */
+.mylink-tooltip {
+  position: fixed;
+  padding: 12px 16px;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  z-index: 999999;
+  pointer-events: none;
+  box-shadow: var(--elevation-3);
+  opacity: 0;
+  transform: translateY(4px);
+  animation: tooltipFadeIn 0.2s ease forwards;
+  max-width: 280px;
+  text-align: left;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+}
+
+@keyframes tooltipFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mylink-tooltip-low {
+  background-color: rgba(220, 53, 69, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(220, 53, 69, 0.8);
+}
+
+.mylink-tooltip-medium {
+  background-color: rgba(255, 193, 7, 0.95);
+  color: #000000;
+  border: 1px solid rgba(255, 193, 7, 0.8);
+}
+
+.mylink-tooltip-high {
+  background-color: rgba(40, 167, 69, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(40, 167, 69, 0.8);
+}
+
+.mylink-tooltip-neutral {
+  background-color: rgba(var(--card-bg-color-rgb), 0.98);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+/* Flèche de l'infobulle */
+.mylink-tooltip::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border: inherit;
+  border-width: 1px 0 0 1px;
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+/* Animation de survol */
+.mylink-tooltip {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mylink-tooltip:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-4);
+}
+
+/* Styles pour les icônes dans les infobulles */
+.mylink-tooltip-high::after {
+  content: '✓';
+  display: inline-block;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+.mylink-tooltip-medium::after,
+.mylink-tooltip-low::after {
+  content: '⚠';
+  display: inline-block;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+/* Styles pour les surlignages de score */
+.score-highlight {
+  background-image: linear-gradient(120deg, transparent 0%, transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  transition: background-image 0.3s ease;
+  border-radius: 0;
+  padding: 0 1px;
+  position: relative;
+  --score-x: 0px;
+  --score-y: 0px;
+}
+
+/* Curseur personnalisé avec le score */
+.score-highlight::before {
+  content: attr(data-score);
+  position: fixed;
+  left: var(--score-x);
+  top: var(--score-y);
+  width: 24px;
+  height: 24px;
+  background: var(--card-bg-color);
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: var(--elevation-1);
+  transform: translate(-50%, -50%);
+}
+
+.score-highlight:hover {
+  cursor: none;
+}
+
+.score-highlight:hover::before {
+  display: flex;
+}
+
+/* Styles spécifiques pour chaque niveau de score */
+.score-highlight.score-low {
+  background-image: linear-gradient(120deg, rgba(220, 53, 69, 0.08) 0%, rgba(220, 53, 69, 0.12) 100%);
+  border-bottom: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.score-highlight.score-low::before {
+  color: rgb(220, 53, 69);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.score-highlight.score-medium {
+  background-image: linear-gradient(120deg, rgba(255, 193, 7, 0.08) 0%, rgba(255, 193, 7, 0.12) 100%);
+  border-bottom: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.score-highlight.score-medium::before {
+  color: rgb(255, 193, 7);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.score-highlight.score-high {
+  background-image: linear-gradient(120deg, rgba(40, 167, 69, 0.08) 0%, rgba(40, 167, 69, 0.12) 100%);
+  border-bottom: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.score-highlight.score-high::before {
+  color: rgb(40, 167, 69);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}

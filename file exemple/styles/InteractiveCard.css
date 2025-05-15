@@ -1,0 +1,285 @@
+/* Interactive Card Component Styles */
+.interactive-card {
+  position: relative;
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: 2rem;
+  box-shadow: var(--elevation-2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.interactive-card:hover {
+  box-shadow: var(--elevation-3);
+  transform: translateY(-5px);
+}
+
+.interactive-card.expanded {
+  cursor: default;
+  box-shadow: var(--elevation-4);
+}
+
+/* Card header styling */
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 2;
+  min-height: 80px;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--card-bg-color-rgb), 0.9),
+    rgba(var(--card-bg-color-rgb), 0.85)
+  );
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.card-image-container {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: var(--elevation-1);
+  background-color: var(--surface-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+  color: var(--primary-color);
+  background-color: rgba(var(--card-bg-color-rgb), 0.8);
+  border-radius: 50%;
+  box-shadow: var(--elevation-1);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--primary-color);
+  flex-grow: 1;
+  text-align: left;
+}
+
+/* Toggle button styling */
+.card-toggle-btn {
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  outline: none;
+}
+
+.card-toggle-btn:hover {
+  background-color: rgba(var(--card-bg-color-rgb), 0.2);
+}
+
+.toggle-icon {
+  position: relative;
+  width: 16px;
+  height: 2px;
+  background-color: transparent;
+}
+
+.toggle-icon::before,
+.toggle-icon::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 2px;
+  background-color: var(--text-color);
+  left: 0;
+  transition: transform 0.3s ease;
+}
+
+.toggle-icon::before {
+  transform: rotate(90deg);
+}
+
+.card-toggle-btn.expanded .toggle-icon::before {
+  transform: rotate(0);
+}
+
+/* Card content styling */
+.card-content {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-content-inner {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+/* Color variants */
+.card-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: var(--gradient-primary);
+  opacity: 0.8;
+}
+
+.card-secondary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: var(--gradient-accent);
+  opacity: 0.8;
+}
+
+.card-accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: var(--gradient-cool);
+  opacity: 0.8;
+}
+
+/* Special styles for expanded cards */
+.interactive-card.expanded .card-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Ripple effect for card header */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.ripple-effect:after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    rgba(var(--card-bg-color-rgb), 0.5) 10%,
+    transparent 10.01%
+  );
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition:
+    transform 0.5s,
+    opacity 1s;
+}
+
+.ripple-effect:active:after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* Animation for card appearance */
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.interactive-card {
+  animation: cardAppear 0.5s forwards;
+}
+
+.interactive-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.interactive-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.interactive-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.interactive-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .card-title {
+    font-size: 1.5rem;
+  }
+
+  .card-image-container,
+  .card-icon {
+    width: 50px;
+    height: 50px;
+    margin-right: 1rem;
+  }
+
+  .card-header {
+    padding: 1rem;
+  }
+
+  .card-content-inner {
+    padding: 0 1rem 1rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-title {
+    font-size: 1.2rem;
+  }
+
+  .card-image-container,
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    margin-right: 0.8rem;
+  }
+
+  .card-toggle-btn {
+    width: 28px;
+    height: 28px;
+  }
+}

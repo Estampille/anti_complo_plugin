@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       console.log("Affichage des scores:", { scoreFiablePercent, scoreFauxPercent });
       
-      scoreFiabilite.textContent = `Score de fiabilité: ${scoreFiablePercent}% / Doute: ${scoreFauxPercent}%`;
+      scoreFiabilite.textContent = `Score de fiabilité: ${scoreFiablePercent}%`;
       updateScoreIndicator(scoreFiablePercent);
       
       highlightButton.disabled = false;

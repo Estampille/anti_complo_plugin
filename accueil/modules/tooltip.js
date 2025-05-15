@@ -5,6 +5,68 @@ window.TooltipModule = (function() {
   let paragraphScores = null;
   let globalScore = null;
 
+  // Gestionnaire pour mettre à jour la position du score
+  function initScorePosition() {
+    document.addEventListener('mousemove', (e) => {
+      const hoveredElement = document.elementFromPoint(e.clientX, e.clientY);
+      if (hoveredElement && hoveredElement.classList.contains('score-highlight')) {
+        const score = hoveredElement.getAttribute('data-score');
+        if (score) {
+          hoveredElement.style.setProperty('--score-x', `${e.clientX}px`);
+          hoveredElement.style.setProperty('--score-y', `${e.clientY}px`);
+        }
+      }
+    });
+  }
+
+  // Fonction pour récupérer tous les paragraphes de texte de la page
+  function getAllPageParagraphs() {
+    const paragraphs = [];
+    
+    // Fonction récursive pour parcourir le DOM
+    function extractTextFromNode(node) {
+      // Ignorer les scripts, styles, et autres éléments non pertinents
+      if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE' || 
+          node.nodeName === 'NOSCRIPT' || node.nodeName === 'IFRAME') {
+        return;
+      }
+
+      // Si c'est un nœud texte avec du contenu significatif
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent.trim();
+        if (text.length > 0) {
+          // Remonter jusqu'au parent block le plus proche
+          let parent = node.parentElement;
+          while (parent && window.getComputedStyle(parent).display !== 'block') {
+            parent = parent.parentElement;
+          }
+          if (parent) {
+            paragraphs.push({
+              element: parent,
+              text: parent.textContent.trim()
+            });
+          }
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // Récursivement parcourir les enfants
+        for (const child of node.childNodes) {
+          extractTextFromNode(child);
+        }
+      }
+    }
+
+    // Commencer l'extraction depuis le body
+    extractTextFromNode(document.body);
+
+    // Éliminer les doublons (même élément parent)
+    const uniqueParagraphs = Array.from(new Map(
+      paragraphs.map(p => [p.element, p])
+    ).values());
+
+    console.log(`📝 Trouvé ${uniqueParagraphs.length} blocs de texte uniques dans la page`);
+    return uniqueParagraphs;
+  }
+
   // Fonction pour définir les scores
   function setScores(data) {
     console.log("Mise à jour des scores avec:", JSON.stringify(data, null, 2));
@@ -12,17 +74,33 @@ window.TooltipModule = (function() {
       paragraphScores = data.main_url.scores_paragraphes || [];
       globalScore = data.main_url.score_fiable_global;
       console.log("Nombre de paragraphes avec scores:", paragraphScores.length);
-      console.log("Score global:", globalScore);
       
-      // Log détaillé des paragraphes reçus
-      paragraphScores.forEach((score, index) => {
-        const words = getFirstAndLastWords(score.texte);
-        console.log(`Paragraphe API #${index + 1}:`, {
-          debut: score.texte.substring(0, 50) + "...",
-          motsSignificatifs: words,
-          fiable: score.Fiable,
-          faux: score.Faux
-        });
+      // Récupérer tous les paragraphes de la page
+      const pageParagraphs = getAllPageParagraphs();
+      
+      // Pour chaque paragraphe de l'API
+      paragraphScores.forEach((scoredParagraph, index) => {
+        const apiWords = getFirstAndLastWords(scoredParagraph.texte);
+        if (!apiWords) return;
+
+        console.log(`\n🔍 Recherche correspondance pour paragraphe API #${index + 1}`);
+        console.log("Premier mot:", apiWords.first);
+        console.log("Dernier mot:", apiWords.last);
+
+        // Chercher dans les paragraphes de la page
+        for (const {element, text} of pageParagraphs) {
+          if (text.includes(apiWords.first) && text.includes(apiWords.last)) {
+            console.log("✅ Correspondance trouvée dans:", 
+              text.substring(0, 50) + "...");
+            
+            // Appliquer le score et la couleur
+            wrapTextWithScore(element, {
+              fiable: scoredParagraph.Fiable,
+              faux: scoredParagraph.Faux
+            });
+            break;
+          }
+        }
       });
     } else {
       paragraphScores = null;
@@ -49,52 +127,53 @@ window.TooltipModule = (function() {
     }
 
     console.log("\n📝 Analyse du texte:");
-    console.log("Texte original:", text.substring(0, 100) + "...");
+    console.log("Texte original:", text.substring(0, 199) + "...");
 
-    // Nettoyer et séparer le texte en mots
-    const words = text.trim()
-      .toLowerCase()
-      .replace(/[.,!?;:"'()\[\]{}]/g, '')
-      .split(/\s+/)
-      .filter(word => word.length > 3);
-
-    console.log("Mots filtrés:", words);
-    console.log("Nombre de mots significatifs:", words.length);
+    // Séparer le texte en mots (sans modification du texte)
+    const words = text.trim().split(/\s+/);
 
     if (words.length < 2) {
-      console.log("❌ Pas assez de mots significatifs");
+      console.log("❌ Pas assez de mots");
       return null;
     }
 
     const result = {
       first: words[0],
       last: words[words.length - 1],
-      wordCount: words.length
+      fullText: text
     };
 
     console.log("✓ Résultat analyse:", result);
     return result;
   }
 
-  // Fonction pour calculer la similarité entre deux textes
-  function calculateSimilarity(words1, words2) {
-    if (!words1 || !words2) return 0;
+  // Fonction pour encapsuler le texte avec la couleur et le score
+  function wrapTextWithScore(element, score) {
+    const text = element.textContent;
+    const words = getFirstAndLastWords(text);
+    if (!words) return;
+
+    const colorClass = getColorClass(score.fiable);
+    const scorePercent = Math.round(score.fiable * 100);
     
-    // Vérifier les mots limites
-    const firstWordMatch = words1.first === words2.first;
-    const lastWordMatch = words1.last === words2.last;
-    
-    // Calculer la différence de longueur
-    const lengthDiff = Math.abs(words1.wordCount - words2.wordCount);
-    const lengthThreshold = words1.wordCount * 0.2;
-    
-    // Calculer un score de similarité
-    let similarity = 0;
-    if (firstWordMatch) similarity += 0.4;
-    if (lastWordMatch) similarity += 0.4;
-    if (lengthDiff <= lengthThreshold) similarity += 0.2;
-    
-    return similarity;
+    // Trouver l'index du premier et du dernier mot
+    const firstIndex = text.indexOf(words.first);
+    const lastIndex = text.lastIndexOf(words.last) + words.last.length;
+
+    if (firstIndex === -1 || lastIndex === -1) {
+      console.log("❌ Impossible de trouver les mots dans le texte");
+      return;
+    }
+
+    // Construire le HTML avec tout le texte entre les mots encapsulé
+    const html = 
+      text.substring(0, firstIndex) +
+      `<span class="score-highlight ${colorClass}" data-score="${scorePercent}">` +
+      text.substring(firstIndex, lastIndex) +
+      '</span>' +
+      text.substring(lastIndex);
+
+    element.innerHTML = html;
   }
 
   // Fonction pour trouver le score correspondant au texte
@@ -115,62 +194,22 @@ window.TooltipModule = (function() {
       return null;
     }
 
-    console.log("\n📊 Mots clés de l'élément:", {
-      premier: elementWords.first,
-      dernier: elementWords.last,
-      nombreMots: elementWords.wordCount
-    });
-
     // Chercher dans les scores
     for (const [index, scored] of paragraphScores.entries()) {
-      console.log(`\n🔄 Comparaison avec paragraphe API #${index + 1}:`);
-      console.log("Texte API:", scored.texte.substring(0, 100) + "...");
-
       const scoredWords = getFirstAndLastWords(scored.texte);
-      if (!scoredWords) {
-        console.log("❌ Échec analyse du texte API");
-        continue;
-      }
+      if (!scoredWords) continue;
 
-      console.log("Comparaison:", {
-        element: {
-          premier: elementWords.first,
-          dernier: elementWords.last,
-          nombreMots: elementWords.wordCount
-        },
-        api: {
-          premier: scoredWords.first,
-          dernier: scoredWords.last,
-          nombreMots: scoredWords.wordCount
-        }
-      });
-
-      // Vérifier si le nombre de mots est similaire (±20%)
-      const wordCountDiff = Math.abs(elementWords.wordCount - scoredWords.wordCount);
-      const wordCountThreshold = elementWords.wordCount * 0.2;
-
-      // Vérifier la correspondance des mots limites
-      const firstWordMatch = elementWords.first === scoredWords.first;
-      const lastWordMatch = elementWords.last === scoredWords.last;
-
-      console.log("Résultats comparaison:", {
-        premierMotIdentique: firstWordMatch,
-        dernierMotIdentique: lastWordMatch,
-        différenceNombreMots: wordCountDiff,
-        seuilToléré: wordCountThreshold,
-        différenceAcceptable: wordCountDiff <= wordCountThreshold
-      });
-
-      if (wordCountDiff <= wordCountThreshold && firstWordMatch && lastWordMatch) {
-        console.log("✅ CORRESPONDANCE TROUVÉE !");
-        console.log("Scores:", {
-          fiable: scored.Fiable,
-          faux: scored.Faux
-        });
-        return {
+      // Vérifier la correspondance exacte des premiers et derniers mots
+      if (elementWords.first === scoredWords.first && 
+          elementWords.last === scoredWords.last) {
+        console.log("✅ CORRESPONDANCE EXACTE TROUVÉE !");
+        const score = {
           fiable: scored.Fiable,
           faux: scored.Faux
         };
+        // Encapsuler le texte avec la couleur et le score
+        wrapTextWithScore(element, score);
+        return score;
       }
     }
     
@@ -206,9 +245,9 @@ window.TooltipModule = (function() {
 
   // Fonction pour obtenir la classe de couleur
   function getColorClass(fiableScore) {
-    if (fiableScore >= 0.7) return 'mylink-tooltip-high';
-    if (fiableScore >= 0.4) return 'mylink-tooltip-medium';
-    return 'mylink-tooltip-low';
+    if (fiableScore >= 0.7) return 'score-high';
+    if (fiableScore >= 0.4) return 'score-medium';
+    return 'score-low';
   }
 
   // Fonction pour afficher une infobulle
@@ -298,6 +337,7 @@ window.TooltipModule = (function() {
       link.rel = 'stylesheet';
       link.href = browser.runtime.getURL('accueil/infobulles.css');
       document.head.appendChild(link);
+      initScorePosition(); // Initialiser le gestionnaire de position
     } catch (error) {
       console.warn('Erreur lors du chargement des styles:', error);
     }

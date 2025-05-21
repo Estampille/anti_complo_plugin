@@ -154,7 +154,7 @@ window.TooltipModule = (function() {
     if (!words) return;
 
     const colorClass = getColorClass(score.fiable);
-    const scorePercent = Math.round(score.fiable );
+    const scorePercent = Math.round(score.fiable * 100);
     
     // Trouver l'index du premier et du dernier mot
     const firstIndex = text.indexOf(words.first);
@@ -221,8 +221,8 @@ window.TooltipModule = (function() {
   function formatTooltipContent(scores) {
     if (!scores) return "Score non disponible";
 
-    const fiablePercent = Math.round(scores.fiable );
-    const fauxPercent = Math.round(scores.faux );
+    const fiablePercent = Math.round(scores.fiable * 100);
+    const fauxPercent = Math.round(scores.faux * 100);
     
     console.log("Formatage du tooltip:", {
       scoresFiable: fiablePercent,

@@ -4,6 +4,7 @@ window.TooltipModule = (function() {
   let moveHandler = null;
   let paragraphScores = null;
   let globalScore = null;
+  let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Gestionnaire pour mettre à jour la position du score
   function initScorePosition() {
@@ -275,7 +276,7 @@ window.TooltipModule = (function() {
         scores = { fiable: globalScore, faux: 1 - globalScore };
         tooltipContent = formatTooltipContent(scores);
         tooltip.classList.add(getColorClass(globalScore));
-    } else {
+      } else {
         tooltipContent = "Lien non analysé";
         tooltip.classList.add('mylink-tooltip-neutral');
       }
@@ -284,22 +285,40 @@ window.TooltipModule = (function() {
     tooltip.style.whiteSpace = 'pre-line';
     tooltip.textContent = tooltipContent;
 
+    // Ajouter un bouton de fermeture pour mobile
+    if (isMobile) {
+      const closeButton = document.createElement('button');
+      closeButton.className = 'tooltip-close';
+      closeButton.innerHTML = '×';
+      closeButton.onclick = hideTooltip;
+      tooltip.appendChild(closeButton);
+    }
+
     document.body.appendChild(tooltip);
     activeTooltip = tooltip;
 
     const updatePosition = (e) => {
-    const rect = element.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
       const tooltipRect = tooltip.getBoundingClientRect();
       
-      let left = e.pageX + 15;
-      let top = e.pageY + 15;
+      let left, top;
 
-      if (left + tooltipRect.width > window.innerWidth) {
-        left = e.pageX - tooltipRect.width - 15;
-      }
+      if (isMobile) {
+        // Sur mobile, centrer l'infobulle en bas de l'écran
+        left = (window.innerWidth - tooltipRect.width) / 2;
+        top = window.innerHeight - tooltipRect.height - 20;
+      } else {
+        // Sur desktop, positionner près du curseur
+        left = e.pageX + 15;
+        top = e.pageY + 15;
 
-      if (top + tooltipRect.height > window.innerHeight) {
-        top = e.pageY - tooltipRect.height - 15;
+        if (left + tooltipRect.width > window.innerWidth) {
+          left = e.pageX - tooltipRect.width - 15;
+        }
+
+        if (top + tooltipRect.height > window.innerHeight) {
+          top = e.pageY - tooltipRect.height - 15;
+        }
       }
 
       tooltip.style.left = `${left}px`;
@@ -307,7 +326,10 @@ window.TooltipModule = (function() {
     };
 
     moveHandler = updatePosition;
-    element.addEventListener('mousemove', moveHandler);
+    
+    if (!isMobile) {
+      element.addEventListener('mousemove', moveHandler);
+    }
 
     updatePosition({ 
       pageX: element.getBoundingClientRect().right, 
@@ -327,7 +349,7 @@ window.TooltipModule = (function() {
         element.removeEventListener('mousemove', moveHandler);
       });
       moveHandler = null;
-      }
+    }
   }
 
   // Fonction pour charger les styles des infobulles
@@ -338,6 +360,23 @@ window.TooltipModule = (function() {
       link.href = browser.runtime.getURL('accueil/infobulles.css');
       document.head.appendChild(link);
       initScorePosition(); // Initialiser le gestionnaire de position
+
+      // Ajouter les écouteurs d'événements tactiles pour mobile
+      if (isMobile) {
+        document.querySelectorAll('p').forEach(element => {
+          element.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            showTooltip(element);
+          });
+        });
+
+        // Fermer l'infobulle en touchant en dehors
+        document.addEventListener('touchstart', (e) => {
+          if (activeTooltip && !activeTooltip.contains(e.target)) {
+            hideTooltip();
+          }
+        });
+      }
     } catch (error) {
       console.warn('Erreur lors du chargement des styles:', error);
     }

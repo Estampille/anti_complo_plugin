@@ -4,6 +4,7 @@ window.TooltipModule = (function() {
   let moveHandler = null;
   let paragraphScores = null;
   let globalScore = null;
+  let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Gestionnaire pour mettre à jour la position du score
   function initScorePosition() {
@@ -109,14 +110,126 @@ window.TooltipModule = (function() {
     }
   }
 
-  // Fonction pour vérifier si des scores sont disponibles
-  function hasScores() {
-    return Array.isArray(paragraphScores) && paragraphScores.length > 0;
+  // Fonction pour afficher une infobulle
+  function showTooltip(element) {
+    hideTooltip();
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'mylink-tooltip';
+    tooltip.id = 'mylink-tooltip';
+
+    let scores = null;
+    let tooltipContent = '';
+
+    if (element.tagName.toLowerCase() === 'p') {
+      scores = findScoreForText(element);
+      if (scores) {
+        tooltipContent = formatTooltipContent(scores);
+        tooltip.classList.add(getColorClass(scores.fiable));
+      } else {
+        tooltipContent = "Paragraphe non analysé";
+        tooltip.classList.add('mylink-tooltip-neutral');
+      }
+    }
+
+    tooltip.style.whiteSpace = 'pre-line';
+    tooltip.textContent = tooltipContent;
+
+    // Ajouter un bouton de fermeture pour mobile
+    if (isMobile) {
+      const closeButton = document.createElement('button');
+      closeButton.className = 'tooltip-close';
+      closeButton.innerHTML = '×';
+      closeButton.onclick = hideTooltip;
+      tooltip.appendChild(closeButton);
+    }
+
+    document.body.appendChild(tooltip);
+    activeTooltip = tooltip;
+
+    const updatePosition = (e) => {
+      const rect = element.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      
+      let left, top;
+
+      if (isMobile) {
+        // Sur mobile, centrer l'infobulle en bas de l'écran
+        left = (window.innerWidth - tooltipRect.width) / 2;
+        top = window.innerHeight - tooltipRect.height - 20;
+      } else {
+        // Sur desktop, positionner près du curseur
+        left = e.pageX + 15;
+        top = e.pageY + 15;
+
+        if (left + tooltipRect.width > window.innerWidth) {
+          left = e.pageX - tooltipRect.width - 15;
+        }
+
+        if (top + tooltipRect.height > window.innerHeight) {
+          top = e.pageY - tooltipRect.height - 15;
+        }
+      }
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    };
+
+    moveHandler = updatePosition;
+    
+    if (!isMobile) {
+      element.addEventListener('mousemove', moveHandler);
+    }
+
+    updatePosition({ 
+      pageX: element.getBoundingClientRect().right, 
+      pageY: element.getBoundingClientRect().top 
+    });
   }
 
-  // Fonction pour vérifier si un score global est disponible
-  function hasGlobalScore() {
-    return globalScore !== null;
+  // Fonction pour masquer l'infobulle
+  function hideTooltip() {
+    if (activeTooltip) {
+      activeTooltip.remove();
+      activeTooltip = null;
+    }
+
+    if (moveHandler) {
+      document.querySelectorAll('p').forEach(element => {
+        element.removeEventListener('mousemove', moveHandler);
+      });
+      moveHandler = null;
+    }
+  }
+
+  // Fonction pour charger les styles des infobulles
+  function loadTooltipStyles() {
+    try {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = browser.runtime.getURL('accueil/infobulles.css');
+      document.head.appendChild(link);
+      initScorePosition(); // Initialiser le gestionnaire de position
+
+      // Ajouter les écouteurs d'événements tactiles pour mobile
+      if (isMobile) {
+        document.querySelectorAll('p').forEach(element => {
+          element.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            showTooltip(element);
+          });
+        });
+
+        // Fermer l'infobulle en touchant en dehors
+        document.addEventListener('touchstart', (e) => {
+          if (activeTooltip && !activeTooltip.contains(e.target)) {
+            hideTooltip();
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Erreur lors du chargement des styles:', error);
+    }
   }
 
   // Fonction pour obtenir le premier et dernier mot significatif d'un texte
@@ -145,35 +258,6 @@ window.TooltipModule = (function() {
 
     console.log("✓ Résultat analyse:", result);
     return result;
-  }
-
-  // Fonction pour encapsuler le texte avec la couleur et le score
-  function wrapTextWithScore(element, score) {
-    const text = element.textContent;
-    const words = getFirstAndLastWords(text);
-    if (!words) return;
-
-    const colorClass = getColorClass(score.fiable);
-    const scorePercent = Math.round(score.fiable * 100);
-    
-    // Trouver l'index du premier et du dernier mot
-    const firstIndex = text.indexOf(words.first);
-    const lastIndex = text.lastIndexOf(words.last) + words.last.length;
-
-    if (firstIndex === -1 || lastIndex === -1) {
-      console.log("❌ Impossible de trouver les mots dans le texte");
-      return;
-    }
-
-    // Construire le HTML avec tout le texte entre les mots encapsulé
-    const html = 
-      text.substring(0, firstIndex) +
-      `<span class="score-highlight ${colorClass}" data-score="${scorePercent}">` +
-      text.substring(firstIndex, lastIndex) +
-      '</span>' +
-      text.substring(lastIndex);
-
-    element.innerHTML = html;
   }
 
   // Fonction pour trouver le score correspondant au texte
@@ -250,97 +334,23 @@ window.TooltipModule = (function() {
     return 'score-low';
   }
 
-  // Fonction pour afficher une infobulle
-  function showTooltip(element) {
-    hideTooltip();
-
-    const tooltip = document.createElement('div');
-    tooltip.className = 'mylink-tooltip';
-    tooltip.id = 'mylink-tooltip';
-
-    let scores = null;
-    let tooltipContent = '';
-
-    if (element.tagName.toLowerCase() === 'p') {
-      scores = findScoreForText(element);
-      if (scores) {
-        tooltipContent = formatTooltipContent(scores);
-        tooltip.classList.add(getColorClass(scores.fiable));
-      } else {
-        tooltipContent = "Paragraphe non analysé";
-        tooltip.classList.add('mylink-tooltip-neutral');
-      }
-    } else if (element.tagName.toLowerCase() === 'a') {
-      if (globalScore !== null) {
-        scores = { fiable: globalScore, faux: 1 - globalScore };
-        tooltipContent = formatTooltipContent(scores);
-        tooltip.classList.add(getColorClass(globalScore));
-    } else {
-        tooltipContent = "Lien non analysé";
-        tooltip.classList.add('mylink-tooltip-neutral');
-      }
-    }
-
-    tooltip.style.whiteSpace = 'pre-line';
-    tooltip.textContent = tooltipContent;
-
-    document.body.appendChild(tooltip);
-    activeTooltip = tooltip;
-
-    const updatePosition = (e) => {
-    const rect = element.getBoundingClientRect();
-      const tooltipRect = tooltip.getBoundingClientRect();
-      
-      let left = e.pageX + 15;
-      let top = e.pageY + 15;
-
-      if (left + tooltipRect.width > window.innerWidth) {
-        left = e.pageX - tooltipRect.width - 15;
-      }
-
-      if (top + tooltipRect.height > window.innerHeight) {
-        top = e.pageY - tooltipRect.height - 15;
-      }
-
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top = `${top}px`;
-    };
-
-    moveHandler = updatePosition;
-    element.addEventListener('mousemove', moveHandler);
-
-    updatePosition({ 
-      pageX: element.getBoundingClientRect().right, 
-      pageY: element.getBoundingClientRect().top 
-    });
+  // Fonction pour encapsuler le texte avec la couleur et le score
+  function wrapTextWithScore(element, score) {
+    // Nouveau comportement : n'ajoute qu'une classe et un data-score, sans toucher au contenu
+    const colorClass = getColorClass(score.fiable);
+    const scorePercent = Math.round(score.fiable * 100);
+    element.classList.add('score-highlight', colorClass);
+    element.setAttribute('data-score', scorePercent);
   }
 
-  // Fonction pour masquer l'infobulle
-  function hideTooltip() {
-    if (activeTooltip) {
-      activeTooltip.remove();
-      activeTooltip = null;
-    }
-
-    if (moveHandler) {
-      document.querySelectorAll('p, a').forEach(element => {
-        element.removeEventListener('mousemove', moveHandler);
-      });
-      moveHandler = null;
-      }
+  // Fonction pour vérifier si des scores sont disponibles
+  function hasScores() {
+    return Array.isArray(paragraphScores) && paragraphScores.length > 0;
   }
 
-  // Fonction pour charger les styles des infobulles
-  function loadTooltipStyles() {
-    try {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = browser.runtime.getURL('accueil/infobulles.css');
-      document.head.appendChild(link);
-      initScorePosition(); // Initialiser le gestionnaire de position
-    } catch (error) {
-      console.warn('Erreur lors du chargement des styles:', error);
-    }
+  // Fonction pour vérifier si un score global est disponible
+  function hasGlobalScore() {
+    return globalScore !== null;
   }
 
   window.addEventListener('unload', hideTooltip);

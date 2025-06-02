@@ -8,7 +8,72 @@
 }
 
 .has-tooltip:hover {
-  background-color: rgba(var(--card-bg-color-rgb), 0.15);
+  background-color: rgba(255, 255, 0, 0.1);
+}
+
+/* Style de base pour les infobulles */
+.mylink-tooltip {
+  position: fixed;
+  z-index: 999999;
+  background: #222;
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  max-width: 300px;
+  text-align: center;
+}
+
+/* Styles pour mobile */
+@media (max-width: 768px) {
+  .mylink-tooltip {
+    width: 90%;
+    max-width: none;
+    left: 50% !important;
+    transform: translateX(-50%);
+    bottom: 20px !important;
+    top: auto !important;
+    pointer-events: auto;
+    padding: 15px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+
+  .tooltip-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+  }
+
+  .tooltip-close:hover {
+    opacity: 1;
+  }
+
+  /* Style pour les éléments surlignés sur mobile */
+  .score-highlight {
+    padding: 4px 0;
+    border-radius: 4px;
+  }
+
+  /* Ajuster la taille du texte pour une meilleure lisibilité */
+  .score-highlight {
+    font-size: 16px;
+    line-height: 1.5;
+  }
 }
 
 /* Styles des infobulles */

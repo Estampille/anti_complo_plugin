@@ -147,7 +147,7 @@ async function makeAPIRequest(payload, tabId) {
     startCounter(tabId);
 
     console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
-    const response = await fetch("http://localhost:5001/analyze_site_infos", {
+    const response = await fetch("https://52f7-85-190-91-51.ngrok-free.app/analyze_site_infos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -164,6 +164,7 @@ async function makeAPIRequest(payload, tabId) {
     }
 
     const data = await response.json();
+    
     console.log("Données API reçues:", data);
     return data;
   } catch (error) {

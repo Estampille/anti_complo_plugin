@@ -1,6 +1,4 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Popup chargé");
-
   const highlightButton = document.getElementById("highlightButton");
   const evaluer = document.getElementById("evaluer");
   const scoreFiabilite = document.getElementById("scoreFiabilite");
@@ -9,8 +7,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Fonction pour mettre à jour l'interface avec un score
   function updateInterface(data, error = null) {
-    console.log("Mise à jour de l'interface avec:", { data, error });
-    
     if (error) {
       scoreFiabilite.textContent = "Erreur: " + error;
       highlightButton.disabled = false;
@@ -20,12 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (data?.main_url) {
       const scoreFiable = data.main_url.score_fiable_global;
-      const scoreFaux = data.main_url.score_faux_global;
-      
       const scoreFiablePercent = Math.round(scoreFiable * 100);
-      const scoreFauxPercent = Math.round(scoreFaux * 100);
-      
-      console.log("Affichage des scores:", { scoreFiablePercent, scoreFauxPercent });
       
       scoreFiabilite.textContent = `Score de fiabilité: ${scoreFiablePercent}%`;
       updateScoreIndicator(scoreFiablePercent);
@@ -37,7 +28,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         evaluer.style.display = "block";
       }
     } else {
-      console.log("Données invalides reçues:", data);
       scoreFiabilite.textContent = "Erreur: Données invalides";
       highlightButton.disabled = false;
       highlightButton.textContent = "Analyser les liens";
@@ -67,12 +57,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Vérifier l'état actuel et restaurer si nécessaire
   try {
     const response = await browser.runtime.sendMessage({ action: "checkStatus" });
-    console.log("État actuel:", response);
 
     if (response.isPending || response.isAnalyzing) {
       updateInterfaceAnalyzing();
       
-      // Mettre à jour le temps écoulé
       if (response.startTime) {
         const updateElapsedTime = () => {
           const elapsed = Math.floor((Date.now() - response.startTime) / 1000);
@@ -80,12 +68,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
         updateElapsedTime();
         const timer = setInterval(updateElapsedTime, 1000);
-        
-        // Nettoyer le timer si le popup se ferme
         window.addEventListener('unload', () => clearInterval(timer));
       }
     } else if (response.lastData) {
-      console.log("Restauration des dernières données:", response.lastData);
       updateInterface(response.lastData);
     }
   } catch (error) {
@@ -95,10 +80,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Gestionnaire du bouton d'analyse
   if (highlightButton) {
     highlightButton.addEventListener("click", () => {
-      console.log("Démarrage de l'analyse...");
       updateInterfaceAnalyzing();
       
-      // Extraire et envoyer les liens pour analyse
       browser.tabs.query({ active: true, currentWindow: true })
         .then(tabs => {
           if (tabs[0]) {
@@ -127,7 +110,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
           });
 
-          console.log("Feedback envoyé:", selectedFeedback.value);
           submitFeedback.textContent = "Merci pour votre avis !";
           submitFeedback.disabled = true;
         } catch (error) {
@@ -158,22 +140,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Établir une connexion avec le background script
   const port = browser.runtime.connect({ name: "popup-port" });
   
-  // Écouter les messages sur le port
-  port.onMessage.addListener((message) => {
-    console.log("Message reçu sur le port:", message);
-    if (message.action === "displayScore") {
-      if (message.error) {
-        updateInterface(null, message.error);
-      } else {
-        updateInterface(message.data);
-      }
-    }
-  });
-
-  // Écouter les messages normaux aussi
-  browser.runtime.onMessage.addListener(message => {
-    console.log("Message reçu dans accueil.js:", message);
-    
+  // Écouter les messages
+  const handleMessage = (message) => {
     if (message.action === "displayScore") {
       if (message.error) {
         updateInterface(null, message.error);
@@ -183,7 +151,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else if (message.action === "analysisStarted") {
       updateInterfaceAnalyzing();
     }
-  });
+  };
+
+  port.onMessage.addListener(handleMessage);
+  browser.runtime.onMessage.addListener(handleMessage);
 
   // Nettoyer la connexion quand le popup se ferme
   window.addEventListener('unload', () => {

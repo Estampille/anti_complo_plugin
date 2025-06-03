@@ -5,16 +5,8 @@ window.ScoresModule = (function() {
 
   // Fonction pour normaliser un score
   function normalizeScore(score) {
-    if (typeof score === 'string') {
-      score = parseFloat(score);
-    }
-    
-    if (isNaN(score)) {
-      return null;
-  }
-
-    // Limiter le score entre 0 et 100
-    return Math.min(Math.max(score, 0), 100);
+    const numScore = typeof score === 'string' ? parseFloat(score) : score;
+    return isNaN(numScore) ? null : Math.min(Math.max(numScore, 0), 100);
   }
 
   // Fonction pour obtenir la classe de score

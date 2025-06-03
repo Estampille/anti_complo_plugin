@@ -92,66 +92,38 @@ window.TooltipModule = (function() {
   function setScores(data) {
     debug('Début setScores', data);
     
-    // Si pas de données, extraire les paragraphes et les envoyer
-    if (!data?.main_url) {
-      debug('Pas de données, préparation nouvelle requête');
-      const apiData = extractPageText();
-      
-      if (!apiData) {
-        debug('ERREUR: Impossible d\'extraire les données');
-        return;
-      }
-
-      // Envoyer les données à l'API via le background script
-      debug('Envoi des données au background script');
-      browser.runtime.sendMessage({
-        action: 'analyzePage',
-        data: apiData
-      }).then(response => {
-        debug('Réponse reçue du background script:', response);
-        if (response?.main_url) {
-          paragraphScores = response.main_url.scores_paragraphes || [];
-          globalScore = response.main_url.score_fiable_global;
-          applyScoresToParagraphs();
-        }
-      }).catch(error => {
-        debug('ERREUR lors de l\'envoi:', error);
-      });
+    if (!data?.main_url?.scores_paragraphes) {
+      debug('Pas de scores disponibles');
       return;
     }
 
-    // Si on a des données, les appliquer
-    paragraphScores = data.main_url.scores_paragraphes || [];
+    // Stocker les scores
+    paragraphScores = data.main_url.scores_paragraphes;
     globalScore = data.main_url.score_fiable_global;
-    applyScoresToParagraphs();
-  }
 
-  // Fonction pour appliquer les scores aux paragraphes
-  function applyScoresToParagraphs() {
-    debug('Début applyScoresToParagraphs');
-    if (!paragraphScores || paragraphScores.length === 0) {
-      debug('ERREUR: Pas de scores à appliquer');
-      return;
-    }
+    console.log('📊 Scores reçus:', {
+      globalScore,
+      paragraphes: paragraphScores.length
+    });
 
+    // Appliquer les scores aux paragraphes
     const pageParagraphs = getAllPageParagraphs();
     debug('Paragraphes trouvés pour application des scores:', pageParagraphs.length);
-    
-    paragraphScores.forEach((scoredParagraph, index) => {
-      const apiWords = getFirstAndLastWords(scoredParagraph.texte);
-      if (!apiWords) {
-        debug(`ERREUR: Impossible d'extraire les mots du paragraphe ${index}`);
-        return;
-      }
 
-      debug(`Recherche correspondance pour paragraphe ${index}:`, {
-        first: apiWords.first,
-        last: apiWords.last
+    paragraphScores.forEach((scoredParagraph, index) => {
+      console.log(`🔍 Recherche correspondance pour paragraphe ${index}:`, {
+        texte: scoredParagraph.texte.substring(0, 50) + '...',
+        score: { Fiable: scoredParagraph.Fiable, Faux: scoredParagraph.Faux }
       });
 
+      // Chercher le paragraphe correspondant dans la page
       for (const {element, text} of pageParagraphs) {
-        if (text.includes(apiWords.first) && text.includes(apiWords.last)) {
-          debug('Correspondance trouvée:', text.substring(0, 50));
+        // Comparer les textes en ignorant la casse et les espaces
+        const normalizedText = text.toLowerCase().trim();
+        const normalizedScoredText = scoredParagraph.texte.toLowerCase().trim();
+
+        if (normalizedText === normalizedScoredText) {
+          console.log('✅ Correspondance trouvée pour:', text.substring(0, 50) + '...');
           wrapTextWithScore(element, {
             fiable: scoredParagraph.Fiable,
             faux: scoredParagraph.Faux
@@ -160,6 +132,33 @@ window.TooltipModule = (function() {
         }
       }
     });
+
+    // Appliquer le score global aux liens
+    if (globalScore !== null) {
+      console.log('🌍 Application du score global:', globalScore);
+      document.querySelectorAll('a[href^="http"]').forEach(link => {
+        link.classList.add('has-tooltip');
+        link.setAttribute('data-score', Math.round(globalScore * 100));
+      });
+    }
+  }
+
+  // Fonction pour obtenir tous les paragraphes de la page
+  function getAllPageParagraphs() {
+    const paragraphs = [];
+    const selector = 'article p, section p, div p, p';
+    
+    document.querySelectorAll(selector).forEach(p => {
+      const text = p.textContent.trim();
+      if (text && text.length > 50) {
+        paragraphs.push({
+          element: p,
+          text: text
+        });
+      }
+    });
+
+    return paragraphs;
   }
 
   // Fonction pour vérifier si des scores sont disponibles

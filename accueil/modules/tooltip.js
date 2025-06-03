@@ -137,8 +137,8 @@ window.TooltipModule = (function() {
 
   // Fonction pour obtenir la classe de couleur
   function getColorClass(fiableScore) {
-    if (fiableScore >= 0.7) return 'score-high';
-    if (fiableScore >= 0.4) return 'score-medium';
+    if (fiableScore >= 0.85) return 'score-high';
+    if (fiableScore >= 0.6) return 'score-medium';
     return 'score-low';
   }
 
@@ -239,9 +239,9 @@ window.TooltipModule = (function() {
     let message = `Fiabilité: ${fiablePercent}%\nDoute: ${fauxPercent}%`;
     
     // Ajouter un message qualitatif
-    if (scores.fiable >= 0.7) {
-      message += "\n✓ Contenu fiable";
-    } else if (scores.fiable >= 0.4) {
+    if (scores.fiable >= 0.85) {
+      message += "\n✓ Contenu très fiable";
+    } else if (scores.fiable >= 0.6) {
       message += "\n⚠ Fiabilité moyenne";
     } else {
       message += "\n⚠ Contenu peu fiable";

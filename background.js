@@ -220,6 +220,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       }
 
       console.log("Liens à analyser :", message.links);
+      console.log("Données de la page :", message.pageData);
       
       // Sauvegarder l'état d'analyse
       await saveData(tabId, {
@@ -227,13 +228,16 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
         timestamp: Date.now()
       });
 
-      // Préparer la requête API
+      // Préparer la requête API avec les scores des paragraphes
       const payload = {
         urls: message.links,
-        main_url: message.pageData?.main_url || sender.tab.url
+        main_url: {
+          url: sender.tab.url,
+          scores_paragraphes: message.pageData?.main_url?.scores_paragraphes || []
+        }
       };
 
-      console.log("Envoi de la requête API:", payload);
+      console.log("Envoi de la requête API avec payload:", payload);
       broadcastToPopups({
         action: "updateCounter",
         elapsedTime: 0

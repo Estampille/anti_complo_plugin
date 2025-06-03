@@ -15,13 +15,17 @@ window.TooltipModule = (function() {
     console.log(`🔍 DEBUG: ${message}`, data || '');
   }
 
+  // Fonction modulaire d'extraction de texte
   function extractPageText() {
     console.log('📄 Début extraction de texte...');
-  
+    debug('Début extraction de texte');
     const paragraphs = [];
-    const selector = 'article p, article div, article span, main p, main div, main span, section p, section div';
+    
+    // Sélecteurs pertinents pour les paragraphes "riches"
+    const selector = 'article p, section p, div p, p';
     const candidates = Array.from(document.querySelectorAll(selector));
-  
+    console.log(`🔍 ${candidates.length} éléments trouvés avec le sélecteur`);
+
     const isVisible = (el) => {
       const style = window.getComputedStyle(el);
       return (
@@ -30,57 +34,55 @@ window.TooltipModule = (function() {
         el.offsetParent !== null
       );
     };
-  
-    const noisePatterns = [
-      /connectez-vous/i,
-      /se connecter/i,
-      /inscrivez-vous/i,
-      /offrir le monde/i,
-      /lecture restreinte/i,
-      /s’abonner/i,
-      /article réservé/i,
-      /multicomptes/i,
-      /sponsored/i,
-      /publicité/i,
-      /partager sur/i,
-      /copier le lien/i,
-      /javascript/i,
-      /vous reste/i,
-      /<[^>]+>/g,
-      /\{.*\}/
-    ];
-  
-    const isProbablyContent = (text) => {
-      const trimmed = text.trim();
-      if (trimmed.length < 80) return false;
-      return !noisePatterns.some((pattern) => pattern.test(trimmed));
+
+    const isRelevant = (el) => {
+      const text = el.textContent.trim();
+      const wordCount = text.split(/\s+/).length;
+      console.log(`📝 Paragraphe trouvé (${wordCount} mots):`, text.substring(0, 50) + "...");
+      
+      return (
+        text.length > 50 &&
+        wordCount > 3 &&
+        !el.closest('header, footer, nav, aside, form, menu') &&
+        isVisible(el)
+      );
     };
-  
-    const seen = new Set();
-  
-    candidates.forEach(el => {
-      const text = el.textContent.trim().replace(/\s+/g, ' ');
-      if (!text || !isVisible(el) || !isProbablyContent(text)) return;
-  
-      const hash = text.slice(0, 150); // Simple dédoublonnage
-      if (seen.has(hash)) return;
-      seen.add(hash);
-  
-      paragraphs.push({
-        texte: text,
-        Fiable: 0,
-        Faux: 0
-      });
+
+    candidates.forEach((el, index) => {
+      if (isRelevant(el)) {
+        console.log(`✅ Paragraphe pertinent ${index + 1}:`, el.textContent.substring(0, 50) + "...");
+        paragraphs.push({
+          element: el,
+          text: el.textContent.trim()
+        });
+      }
     });
-  
+
+    // Supprimer les doublons basés sur le texte
+    const seen = new Set();
+    const uniqueParagraphs = paragraphs.filter(p => {
+      const hash = p.text.slice(0, 150); // hash rudimentaire
+      if (seen.has(hash)) {
+        console.log('🔄 Doublon trouvé:', p.text.substring(0, 50) + "...");
+        return false;
+      }
+      seen.add(hash);
+      return true;
+    });
+
+    console.log(`📊 ${uniqueParagraphs.length} paragraphes uniques trouvés`);
+
+    // Formater pour l'API
+    const formattedParagraphs = uniqueParagraphs.map(p => p.text);
+
     const apiData = {
       urls: [],
       main_url: {
         url: window.location.href,
-        scores_paragraphes: paragraphs
+        scores_paragraphes: formattedParagraphs
       }
     };
-  
+
     console.log('📤 Données extraites pour API:', apiData);
     return apiData;
   }

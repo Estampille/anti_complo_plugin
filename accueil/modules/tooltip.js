@@ -1,112 +1,163 @@
 // Module de gestion des infobulles
+console.log('🔄 Chargement du module Tooltip...');
+
+// Définir le module globalement
 window.TooltipModule = (function() {
+  console.log('📦 Initialisation du module Tooltip...');
+  
   let activeTooltip = null;
   let moveHandler = null;
   let paragraphScores = null;
   let globalScore = null;
 
-  // Gestionnaire pour mettre à jour la position du score
-  function initScorePosition() {
-    document.addEventListener('mousemove', (e) => {
-      const hoveredElement = document.elementFromPoint(e.clientX, e.clientY);
-      if (hoveredElement && hoveredElement.classList.contains('score-highlight')) {
-        const score = hoveredElement.getAttribute('data-score');
-        if (score) {
-          hoveredElement.style.setProperty('--score-x', `${e.clientX}px`);
-          hoveredElement.style.setProperty('--score-y', `${e.clientY}px`);
-        }
-      }
-    });
+  // Fonction de débogage
+  function debug(message, data = null) {
+    console.log(`🔍 DEBUG: ${message}`, data || '');
   }
 
-  // Fonction pour récupérer tous les paragraphes de texte de la page
-  function getAllPageParagraphs() {
+  function extractPageText() {
+    console.log('📄 Début extraction de texte...');
+  
     const paragraphs = [];
-    
-    // Fonction récursive pour parcourir le DOM
-    function extractTextFromNode(node) {
-      // Ignorer les scripts, styles, et autres éléments non pertinents
-      if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE' || 
-          node.nodeName === 'NOSCRIPT' || node.nodeName === 'IFRAME') {
-        return;
+    const selector = 'article p, article div, article span, main p, main div, main span, section p, section div';
+    const candidates = Array.from(document.querySelectorAll(selector));
+  
+    const isVisible = (el) => {
+      const style = window.getComputedStyle(el);
+      return (
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        el.offsetParent !== null
+      );
+    };
+  
+    const noisePatterns = [
+      /connectez-vous/i,
+      /se connecter/i,
+      /inscrivez-vous/i,
+      /offrir le monde/i,
+      /lecture restreinte/i,
+      /s’abonner/i,
+      /article réservé/i,
+      /multicomptes/i,
+      /sponsored/i,
+      /publicité/i,
+      /partager sur/i,
+      /copier le lien/i,
+      /javascript/i,
+      /vous reste/i,
+      /<[^>]+>/g,
+      /\{.*\}/
+    ];
+  
+    const isProbablyContent = (text) => {
+      const trimmed = text.trim();
+      if (trimmed.length < 80) return false;
+      return !noisePatterns.some((pattern) => pattern.test(trimmed));
+    };
+  
+    const seen = new Set();
+  
+    candidates.forEach(el => {
+      const text = el.textContent.trim().replace(/\s+/g, ' ');
+      if (!text || !isVisible(el) || !isProbablyContent(text)) return;
+  
+      const hash = text.slice(0, 150); // Simple dédoublonnage
+      if (seen.has(hash)) return;
+      seen.add(hash);
+  
+      paragraphs.push({
+        texte: text,
+        Fiable: 0,
+        Faux: 0
+      });
+    });
+  
+    const apiData = {
+      urls: [],
+      main_url: {
+        url: window.location.href,
+        scores_paragraphes: paragraphs
       }
-
-      // Si c'est un nœud texte avec du contenu significatif
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent.trim();
-        if (text.length > 0) {
-          // Remonter jusqu'au parent block le plus proche
-          let parent = node.parentElement;
-          while (parent && window.getComputedStyle(parent).display !== 'block') {
-            parent = parent.parentElement;
-          }
-          if (parent) {
-            paragraphs.push({
-              element: parent,
-              text: parent.textContent.trim()
-            });
-          }
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // Récursivement parcourir les enfants
-        for (const child of node.childNodes) {
-          extractTextFromNode(child);
-        }
-      }
-    }
-
-    // Commencer l'extraction depuis le body
-    extractTextFromNode(document.body);
-
-    // Éliminer les doublons (même élément parent)
-    const uniqueParagraphs = Array.from(new Map(
-      paragraphs.map(p => [p.element, p])
-    ).values());
-
-    console.log(`📝 Trouvé ${uniqueParagraphs.length} blocs de texte uniques dans la page`);
-    return uniqueParagraphs;
+    };
+  
+    console.log('📤 Données extraites pour API:', apiData);
+    return apiData;
   }
+  
 
   // Fonction pour définir les scores
   function setScores(data) {
-    console.log("Mise à jour des scores avec:", JSON.stringify(data, null, 2));
-    if (data?.main_url) {
-      paragraphScores = data.main_url.scores_paragraphes || [];
-      globalScore = data.main_url.score_fiable_global;
-      console.log("Nombre de paragraphes avec scores:", paragraphScores.length);
+    debug('Début setScores', data);
+    
+    // Si pas de données, extraire les paragraphes et les envoyer
+    if (!data?.main_url) {
+      debug('Pas de données, préparation nouvelle requête');
+      const apiData = extractPageText();
       
-      // Récupérer tous les paragraphes de la page
-      const pageParagraphs = getAllPageParagraphs();
-      
-      // Pour chaque paragraphe de l'API
-      paragraphScores.forEach((scoredParagraph, index) => {
-        const apiWords = getFirstAndLastWords(scoredParagraph.texte);
-        if (!apiWords) return;
+      if (!apiData) {
+        debug('ERREUR: Impossible d\'extraire les données');
+        return;
+      }
 
-        console.log(`\n🔍 Recherche correspondance pour paragraphe API #${index + 1}`);
-        console.log("Premier mot:", apiWords.first);
-        console.log("Dernier mot:", apiWords.last);
-
-        // Chercher dans les paragraphes de la page
-        for (const {element, text} of pageParagraphs) {
-          if (text.includes(apiWords.first) && text.includes(apiWords.last)) {
-            console.log("✅ Correspondance trouvée dans:", 
-              text.substring(0, 50) + "...");
-            
-            // Appliquer le score et la couleur
-            wrapTextWithScore(element, {
-              fiable: scoredParagraph.Fiable,
-              faux: scoredParagraph.Faux
-            });
-            break;
-          }
+      // Envoyer les données à l'API via le background script
+      debug('Envoi des données au background script');
+      browser.runtime.sendMessage({
+        action: 'analyzePage',
+        data: apiData
+      }).then(response => {
+        debug('Réponse reçue du background script:', response);
+        if (response?.main_url) {
+          paragraphScores = response.main_url.scores_paragraphes || [];
+          globalScore = response.main_url.score_fiable_global;
+          applyScoresToParagraphs();
         }
+      }).catch(error => {
+        debug('ERREUR lors de l\'envoi:', error);
       });
-    } else {
-      paragraphScores = null;
-      globalScore = null;
-      console.log("Réinitialisation des scores - données invalides");
+      return;
     }
+
+    // Si on a des données, les appliquer
+    paragraphScores = data.main_url.scores_paragraphes || [];
+    globalScore = data.main_url.score_fiable_global;
+    applyScoresToParagraphs();
+  }
+
+  // Fonction pour appliquer les scores aux paragraphes
+  function applyScoresToParagraphs() {
+    debug('Début applyScoresToParagraphs');
+    if (!paragraphScores || paragraphScores.length === 0) {
+      debug('ERREUR: Pas de scores à appliquer');
+      return;
+    }
+
+    const pageParagraphs = getAllPageParagraphs();
+    debug('Paragraphes trouvés pour application des scores:', pageParagraphs.length);
+    
+    paragraphScores.forEach((scoredParagraph, index) => {
+      const apiWords = getFirstAndLastWords(scoredParagraph.texte);
+      if (!apiWords) {
+        debug(`ERREUR: Impossible d'extraire les mots du paragraphe ${index}`);
+        return;
+      }
+
+      debug(`Recherche correspondance pour paragraphe ${index}:`, {
+        first: apiWords.first,
+        last: apiWords.last
+      });
+
+      for (const {element, text} of pageParagraphs) {
+        if (text.includes(apiWords.first) && text.includes(apiWords.last)) {
+          debug('Correspondance trouvée:', text.substring(0, 50));
+          wrapTextWithScore(element, {
+            fiable: scoredParagraph.Fiable,
+            faux: scoredParagraph.Faux
+          });
+          break;
+        }
+      }
+    });
   }
 
   // Fonction pour vérifier si des scores sont disponibles
@@ -325,12 +376,54 @@ window.TooltipModule = (function() {
 
   window.addEventListener('unload', hideTooltip);
 
-  return {
+  // Initialisation
+  console.log('🚀 Initialisation des styles et écouteurs...');
+  loadTooltipStyles();
+
+  // S'assurer que le module est initialisé
+  if (document.readyState === 'loading') {
+    console.log('⏳ DOM en cours de chargement, attente...');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('📄 DOM chargé, initialisation du module Tooltip');
+      loadTooltipStyles();
+    });
+  } else {
+    console.log('✅ DOM déjà chargé, initialisation immédiate');
+    loadTooltipStyles();
+  }
+
+  // Écouter les messages du background script
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    debug('Message reçu dans TooltipModule:', message);
+    if (message.action === 'analyzePage') {
+      setScores(message.data);
+    }
+  });
+
+  // Exposer la fonction d'extraction
+  const module = {
     showTooltip,
     hideTooltip,
     loadTooltipStyles,
     setScores,
     hasScores,
-    hasGlobalScore
+    hasGlobalScore,
+    extractPageText
   };
+
+  console.log('✅ Module Tooltip initialisé avec succès');
+  return module;
 })();
+
+// Vérification de l'initialisation
+if (typeof window.TooltipModule === 'undefined') {
+  console.error('❌ ERREUR: Module Tooltip non initialisé');
+} else {
+  console.log('✅ Module Tooltip disponible globalement');
+  // Test d'extraction immédiat
+  console.log('🧪 Test d\'extraction de texte...');
+  window.TooltipModule.extractPageText();
+}
+
+// Exposer le module globalement
+window.TooltipModule = window.TooltipModule;

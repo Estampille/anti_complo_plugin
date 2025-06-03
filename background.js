@@ -147,14 +147,14 @@ async function makeAPIRequest(payload, tabId) {
     startCounter(tabId);
 
     console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
-    const response = await fetch("https://52f7-85-190-91-51.ngrok-free.app/analyze_site_infos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
+    // const response = await fetch("https://7527-2001-861-4240-fdf0-2c2a-14a-721-f5c4.ngrok-free.app", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify(payload),
+    //   signal: controller.signal
+    // });
 
     clearTimeout(timeoutId);
     console.log("Réponse API reçue, status:", response.status);
@@ -163,8 +163,8 @@ async function makeAPIRequest(payload, tabId) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    
+    // const data = await response.json();
+    const data = 'data'
     console.log("Données API reçues:", data);
     return data;
   } catch (error) {
@@ -200,136 +200,93 @@ async function checkPendingRequest(tabId) {
   
   return {
     isPending: !!request,
-    startTime: request?.timestamp,
+    startTime: request?.timestamp || null,
     elapsedTime: request ? Math.floor((Date.now() - request.timestamp) / 1000) : 0,
     lastData: data?.data || null,
     isAnalyzing: data?.isAnalyzing || false
   };
 }
 
-// Relayer les messages entre le popup et les content scripts
-browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+// Écouteur de messages
+browser.runtime.onMessage.addListener(async (message, sender) => {
   console.log("Message reçu dans background.js:", message, "de:", sender);
-
+  
   try {
-    // Si le message demande l'état de la requête
-    if (message.action === "checkStatus") {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tabs && tabs.length > 0) {
-        const status = await checkPendingRequest(tabs[0].id);
-        console.log("Status renvoyé:", status);
-        return Promise.resolve(status);
+    if (message.action === "sendLinks") {
+      const tabId = sender.tab?.id;
+      if (!tabId) {
+        console.error("❌ Pas d'ID d'onglet disponible");
+        return;
       }
-      return Promise.resolve({ isPending: false, isAnalyzing: false });
-    }
 
-    // Si le message demande d'analyser les liens
-    if (message.action === "sendLinks" && sender.tab) {
       console.log("Liens à analyser :", message.links);
-
-      // Vérifier si une requête est déjà en cours
-      if (pendingRequests.has(sender.tab.id)) {
-        throw new Error("Une analyse est déjà en cours");
-      }
-
-      const payload = {
-        urls: [],
-        main_url: sender.tab.url || message.links[0]
-      };
-
-      // Enregistrer la requête en cours
-      pendingRequests.set(sender.tab.id, {
-        timestamp: Date.now(),
-        links: message.links
-      });
-
+      
       // Sauvegarder l'état d'analyse
-      await saveData(sender.tab.id, {
+      await saveData(tabId, {
         isAnalyzing: true,
         timestamp: Date.now()
       });
 
+      // Préparer la requête API
+      const payload = {
+        urls: message.links,
+        main_url: message.pageData?.main_url || sender.tab.url
+      };
+
+      console.log("Envoi de la requête API:", payload);
+      broadcastToPopups({
+        action: "updateCounter",
+        elapsedTime: 0
+      });
+
       try {
-        // Informer que l'analyse commence
-        await browser.tabs.sendMessage(sender.tab.id, {
-          action: "analysisStarted",
+        console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
+        const response = await fetch("http://localhost:5001/analyze_site_infos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Données API reçues:", data);
+
+        // Sauvegarder les données
+        await saveData(tabId, {
+          isAnalyzing: false,
+          data: data,
           timestamp: Date.now()
         });
 
-        const data = await makeAPIRequest(payload, sender.tab.id);
-        console.log("Réponse API reçue dans background:", data);
-
-        // Supprimer la requête en cours et réinitialiser l'état
-        await resetAnalysisState(sender.tab.id);
-
-        // Préparer les données à envoyer
-        const responseData = {
-          main_url: {
-            score_fiable_global: data.main_url.score_fiable_global,
-            score_faux_global: data.main_url.score_faux_global,
-            scores_paragraphes: data.main_url.scores_paragraphes
-          }
-        };
-
-        console.log("Données préparées pour l'envoi:", responseData);
-
-        // Sauvegarder les données
-        await saveData(sender.tab.id, {
-          data: responseData,
-          timestamp: Date.now(),
-          isAnalyzing: false
+        // Envoyer les données au content script
+        await browser.tabs.sendMessage(tabId, {
+          action: "displayScore",
+          data: data
         });
 
-        // Envoyer au content script
-        console.log("Envoi au content script...");
-        await browser.tabs.sendMessage(sender.tab.id, {
-            action: "displayScore",
-          data: responseData
+        // Informer les popups
+        broadcastToPopups({
+          action: "displayScore",
+          data: data
         });
-
-        // Envoyer au popup via port
-        try {
-          console.log("Tentative d'envoi au popup...");
-          broadcastToPopups(responseData);
-        } catch (error) {
-          console.log("Popup probablement fermé:", error);
-        }
-
-        return true;
 
       } catch (error) {
-        console.error("Erreur lors de l'analyse :", error);
-        
-        // Réinitialiser l'état en cas d'erreur
-        await resetAnalysisState(sender.tab.id);
-        
-        // Informer de l'erreur
-        const errorMessage = {
+        console.error("Erreur API détaillée:", error);
+        await resetAnalysisState(tabId);
+        broadcastToPopups({
           action: "displayScore",
           error: error.message
-        };
-        
-        // Envoyer l'erreur au content script
-        if (sender.tab?.id) {
-          await browser.tabs.sendMessage(sender.tab.id, errorMessage);
-          
-          // Tenter d'informer le popup aussi
-          try {
-            broadcastToPopups(errorMessage);
-          } catch (error) {
-            console.log("Popup probablement fermé lors de l'envoi de l'erreur");
-          }
-        }
-        
-        throw error; // Propager l'erreur pour le logging
+        });
       }
     }
   } catch (error) {
     console.error("Erreur inattendue dans le listener onMessage:", error);
-    return Promise.reject(error);
   }
-
-  return false;
 });
 
 // Nettoyer les données lors de la fermeture d'un onglet

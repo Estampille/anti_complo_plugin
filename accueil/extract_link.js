@@ -1,9 +1,32 @@
 (function () {
   console.log("🔍 Content Script (extract_link.js) chargé et initialisé");
 
+  // Attendre que le module Tooltip soit initialisé
+  function waitForTooltipModule(callback, maxAttempts = 10) {
+    let attempts = 0;
+    
+    function checkModule() {
+      console.log(`⏳ Vérification du module Tooltip (tentative ${attempts + 1}/${maxAttempts})...`);
+      
+      if (window.TooltipModule) {
+        console.log("✅ Module Tooltip trouvé!");
+        callback();
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(checkModule, 500);
+      } else {
+        console.error("❌ Module Tooltip non trouvé après", maxAttempts, "tentatives");
+      }
+    }
+    
+    checkModule();
+  }
+
   // Initialiser le module d'infobulles
-  console.log("Initialisation du module d'infobulles...");
-  TooltipModule.loadTooltipStyles();
+  waitForTooltipModule(() => {
+    console.log("Initialisation du module d'infobulles...");
+    window.TooltipModule.loadTooltipStyles();
+  });
 
   // Fonction pour extraire les liens uniques
   function extractUniqueLinks() {
@@ -166,15 +189,25 @@
         const links = extractUniqueLinks();
         console.log(`✓ ${links.length} liens uniques extraits`);
 
+        // Extraire le texte de la page
+        console.log("📄 Extraction du texte de la page...");
+        if (!window.TooltipModule) {
+          console.error("❌ Module Tooltip non disponible pour l'extraction");
+          return;
+        }
+        const pageData = window.TooltipModule.extractPageText();
+        console.log("📊 Données extraites:", pageData);
+
         // Nettoyer les anciens écouteurs et styles avant l'analyse
         cleanupPreviousListeners();
 
-        // Envoyer les liens au background script
+        // Envoyer les liens et le texte au background script
         browser.runtime.sendMessage({
           action: "sendLinks",
-          links: links
+          links: links,
+          pageData: pageData
         }).catch(error => {
-          console.error("❌ Erreur lors de l'envoi des liens:", error);
+          console.error("❌ Erreur lors de l'envoi des données:", error);
         });
       }
 

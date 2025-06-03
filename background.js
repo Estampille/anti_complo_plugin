@@ -147,14 +147,14 @@ async function makeAPIRequest(payload, tabId) {
     startCounter(tabId);
 
     console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
-    // const response = await fetch("https://7527-2001-861-4240-fdf0-2c2a-14a-721-f5c4.ngrok-free.app", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify(payload),
-    //   signal: controller.signal
-    // });
+    const response = await fetch("http://localhost:5001/analyze_site_infos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
     clearTimeout(timeoutId);
     console.log("Réponse API reçue, status:", response.status);
@@ -163,8 +163,8 @@ async function makeAPIRequest(payload, tabId) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // const data = await response.json();
-    const data = 'data'
+    const data = await response.json();
+    // const data = 'data'
     console.log("Données API reçues:", data);
     return data;
   } catch (error) {

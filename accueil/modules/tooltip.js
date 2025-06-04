@@ -8,6 +8,44 @@ window.TooltipModule = (function() {
   let moveHandler = null;
   let paragraphScores = null;
   let globalScore = null;
+  let scoreCache = new Map(); // Cache pour les scores
+  let debounceTimer = null; // Pour le debounce des événements
+
+  // Fonction de debounce pour optimiser les performances
+  function debounce(func, wait) {
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(debounceTimer);
+        func(...args);
+      };
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(later, wait);
+    };
+  }
+
+  // Fonction pour mettre en cache un score
+  function cacheScore(text, score) {
+    const key = text.toLowerCase().trim();
+    scoreCache.set(key, {
+      score,
+      timestamp: Date.now()
+    });
+  }
+
+  // Fonction pour récupérer un score du cache
+  function getCachedScore(text) {
+    const key = text.toLowerCase().trim();
+    const cached = scoreCache.get(key);
+    if (cached && Date.now() - cached.timestamp < 30 * 60 * 1000) { // Cache valide 30 minutes
+      return cached.score;
+    }
+    return null;
+  }
+
+  // Fonction pour nettoyer le cache
+  function clearCache() {
+    scoreCache.clear();
+  }
 
   // Fonction d'extraction de texte
   function extractPageText() {
@@ -118,12 +156,15 @@ window.TooltipModule = (function() {
   // Fonction pour obtenir tous les paragraphes
   function getAllPageParagraphs() {
     const paragraphs = [];
-    document.querySelectorAll('article p, section p, div p, p').forEach(p => {
+    const selector = 'article p, section p, div p, p';
+    
+    document.querySelectorAll(selector).forEach(p => {
       const text = p.textContent.trim();
-      if (text && text.length > 50) {
+      if (text && text.length > 150) {
         paragraphs.push({ element: p, text: text });
       }
     });
+
     return paragraphs;
   }
 
@@ -175,7 +216,7 @@ window.TooltipModule = (function() {
     document.body.appendChild(tooltip);
     activeTooltip = tooltip;
 
-    const updatePosition = () => {
+    const updatePosition = debounce(() => {
       const rect = element.getBoundingClientRect();
       const tooltipRect = tooltip.getBoundingClientRect();
       const padding = 15;
@@ -201,7 +242,7 @@ window.TooltipModule = (function() {
 
       tooltip.style.left = `${left}px`;
       tooltip.style.top = `${top}px`;
-    };
+    }, 10); // Debounce de 10ms
 
     // Mettre à jour la position immédiatement et lors du défilement
     updatePosition();
@@ -254,12 +295,21 @@ window.TooltipModule = (function() {
   function findScoreForText(element) {
     if (!paragraphScores) return null;
     const elementText = element.textContent.toLowerCase().trim();
+
+    // Vérifier d'abord le cache
+    const cachedScore = getCachedScore(elementText);
+    if (cachedScore) return cachedScore;
+
+    // Si pas en cache, chercher dans les scores
     for (const scored of paragraphScores) {
       if (scored.texte.toLowerCase().trim() === elementText) {
-        return {
+        const score = {
           fiable: scored.Fiable,
           faux: scored.Faux
         };
+        // Mettre en cache
+        cacheScore(elementText, score);
+        return score;
       }
     }
     return null;
@@ -289,7 +339,8 @@ window.TooltipModule = (function() {
     setScores,
     hasScores: () => Array.isArray(paragraphScores) && paragraphScores.length > 0,
     hasGlobalScore: () => globalScore !== null,
-    extractPageText
+    extractPageText,
+    clearCache // Exposer la fonction de nettoyage du cache
   };
 })();
 

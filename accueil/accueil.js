@@ -5,8 +5,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   const submitFeedback = document.getElementById("submitFeedback");
   const scoreContainer = document.querySelector(".score-container");
 
+  let analysisState = { // État local du popup
+    isAnalyzing: false,
+    startTime: null,
+    lastData: null,
+    timerInterval: null
+  };
+
   // Fonction pour mettre à jour l'interface avec un score
   function updateInterface(data, error = null) {
+    analysisState.lastData = data;
+    analysisState.isAnalyzing = false;
+    clearInterval(analysisState.timerInterval);
+    analysisState.timerInterval = null;
+    analysisState.startTime = null;
+
     if (error) {
       scoreFiabilite.textContent = "Erreur: " + error;
       highlightButton.disabled = false;
@@ -38,9 +51,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   function updateScoreIndicator(score) {
     scoreContainer.classList.remove("score-low", "score-medium", "score-high");
     
-    if (score < 45) {
+    if (score < 60) {
       scoreContainer.classList.add("score-low");
-    } else if (score >= 45 && score < 70) {
+    } else if (score >= 60 && score < 85) {
       scoreContainer.classList.add("score-medium");
     } else {
       scoreContainer.classList.add("score-high");
@@ -48,33 +61,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Fonction pour mettre à jour l'interface pendant l'analyse
-  function updateInterfaceAnalyzing() {
+  function updateInterfaceAnalyzing(startTime = Date.now()) {
+    analysisState.isAnalyzing = true;
+    analysisState.startTime = startTime;
     highlightButton.disabled = true;
     highlightButton.textContent = "Analyse en cours...";
-    scoreFiabilite.textContent = "Analyse en cours...";
+    
+    // Démarrer ou reprendre le timer
+    if (!analysisState.timerInterval) {
+      const updateElapsedTime = () => {
+        const elapsed = Math.floor((Date.now() - analysisState.startTime) / 1000);
+        scoreFiabilite.textContent = `Analyse en cours... (${elapsed}s)`;
+      };
+      updateElapsedTime(); // Mettre à jour immédiatement
+      analysisState.timerInterval = setInterval(updateElapsedTime, 1000);
+    }
   }
 
-  // Vérifier l'état actuel et restaurer si nécessaire
+  // Charger l'état sauvegardé au démarrage
   try {
-    const response = await browser.runtime.sendMessage({ action: "checkStatus" });
-
-    if (response.isPending || response.isAnalyzing) {
-      updateInterfaceAnalyzing();
-      
-      if (response.startTime) {
-        const updateElapsedTime = () => {
-          const elapsed = Math.floor((Date.now() - response.startTime) / 1000);
-          scoreFiabilite.textContent = `Analyse en cours... (${elapsed}s)`;
-        };
-        updateElapsedTime();
-        const timer = setInterval(updateElapsedTime, 1000);
-        window.addEventListener('unload', () => clearInterval(timer));
-      }
-    } else if (response.lastData) {
-      updateInterface(response.lastData);
+    const { savedAnalysisState } = await browser.storage.local.get("savedAnalysisState");
+    if (savedAnalysisState && savedAnalysisState.isAnalyzing) {
+      // Restaurer l'état si une analyse était en cours
+      analysisState.isAnalyzing = true;
+      analysisState.startTime = savedAnalysisState.startTime;
+      analysisState.lastData = savedAnalysisState.lastData; // Conserver les dernières données si elles existent
+      updateInterfaceAnalyzing(analysisState.startTime);
+    } else if (savedAnalysisState && savedAnalysisState.lastData) {
+      // Restaurer les dernières données si l'analyse était terminée
+      analysisState.lastData = savedAnalysisState.lastData;
+      updateInterface(analysisState.lastData);
     }
   } catch (error) {
-    console.error("Erreur lors de la vérification de l'état:", error);
+    console.error("Erreur lors du chargement de l'état sauvegardé:", error);
   }
 
   // Gestionnaire du bouton d'analyse
@@ -149,15 +168,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateInterface(message.data);
       }
     } else if (message.action === "analysisStarted") {
+      // Le background script indique que l'analyse a commencé
       updateInterfaceAnalyzing();
     }
   };
 
   port.onMessage.addListener(handleMessage);
-  browser.runtime.onMessage.addListener(handleMessage);
+  browser.runtime.onMessage.addListener(handleMessage); // Pour les messages diffusés
 
-  // Nettoyer la connexion quand le popup se ferme
+  // Sauvegarder l'état avant la fermeture du popup
   window.addEventListener('unload', () => {
+    browser.storage.local.set({
+      savedAnalysisState: {
+        isAnalyzing: analysisState.isAnalyzing,
+        startTime: analysisState.startTime,
+        lastData: analysisState.lastData // Sauvegarder les dernières données reçues
+      }
+    });
     port.disconnect();
+    // Ne pas clearInterval ici, car le timer continue dans le background script
   });
 });

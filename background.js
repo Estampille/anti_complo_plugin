@@ -246,10 +246,10 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       try {
         console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
         const response = await fetch("https://a897-2001-861-4240-fdf0-6846-d04b-6202-5131.ngrok-free.app/analyze_site_infos", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
           body: JSON.stringify(payload)
         });
 
@@ -269,13 +269,13 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
 
         // Envoyer les données au content script
         await browser.tabs.sendMessage(tabId, {
-          action: "displayScore",
+            action: "displayScore",
           data: data
         });
 
         // Informer les popups
         broadcastToPopups({
-          action: "displayScore",
+            action: "displayScore",
           data: data
         });
 

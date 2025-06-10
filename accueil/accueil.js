@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const submitFeedback = document.getElementById("submitFeedback");
   const scoreContainer = document.querySelector(".score-container");
   const resetButton = document.getElementById("resetButton");
+  const similarArticlesContainer = document.getElementById("similarArticlesContainer");
+  const similarArticlesButton = document.getElementById("similarArticlesButton");
 
   let analysisState = { // État local du popup
     isAnalyzing: false,
@@ -25,10 +27,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       scoreFiabilite.textContent = "Erreur: " + error;
       highlightButton.disabled = false;
       highlightButton.textContent = "Analyser les liens";
+      if (similarArticlesButton) similarArticlesButton.style.display = "none";
       return;
     }
 
-    if (data?.main_url) {
+    if (data?.main_url && typeof data.main_url.score_fiable_global === "number") {
       const scoreFiable = data.main_url.score_fiable_global;
       const scoreFiablePercent = Math.round(scoreFiable * 100);
       
@@ -41,10 +44,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (evaluer) {
         evaluer.style.display = "block";
       }
+      if (similarArticlesButton) similarArticlesButton.style.display = "block";
     } else {
       scoreFiabilite.textContent = "Erreur: Données invalides";
       highlightButton.disabled = false;
       highlightButton.textContent = "Analyser les liens";
+      if (similarArticlesButton) similarArticlesButton.style.display = "none";
     }
   }
 
@@ -169,8 +174,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateInterface(message.data);
       }
     } else if (message.action === "analysisStarted") {
-      // Le background script indique que l'analyse a commencé
       updateInterfaceAnalyzing();
+    } else if (message.action === "showSimilarArticles") {
+      if (similarArticlesContainer) {
+        similarArticlesContainer.innerHTML = "";
+        if (message.articles && message.articles.length > 0) {
+          message.articles.forEach(article => {
+            const div = document.createElement("div");
+            div.className = "similar-article";
+            div.innerHTML = `<a href="${article.url}" target="_blank">${article.url}</a> — Fiabilité : ${Math.round(article.fiabilite * 100)}%`;
+            similarArticlesContainer.appendChild(div);
+          });
+        } else {
+          similarArticlesContainer.textContent = message.error || "Aucun article similaire trouvé.";
+        }
+      }
     }
   };
 
@@ -215,4 +233,47 @@ document.addEventListener("DOMContentLoaded", async () => {
       submitFeedback.disabled = false;
     });
   }
+
+  // Gestionnaire du bouton 'Articles similaires'
+  if (similarArticlesButton) {
+    similarArticlesButton.addEventListener("click", async () => {
+      if (!analysisState.lastData) return;
+      try {
+        console.log("Récupération des articles similaires");
+        console.log(analysisState.lastData);
+        const response = await fetch("http://127.0.0.1:5003/get_similar_articl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(analysisState.lastData)
+        });
+        const data = await response.json();
+        if (similarArticlesContainer) {
+          similarArticlesContainer.innerHTML = "";
+          if (data && Object.keys(data).length > 0) {
+            for (const key in data) {
+              for (const item of data[key]) {
+                const div = document.createElement("div");
+                div.className = "similar-article";
+                div.innerHTML = `<a href="${item[2]}" target="_blank">${item[2]}</a> — Fiabilité : ${Math.round(item[1] * 100)}%`;
+                similarArticlesContainer.appendChild(div);
+              }
+            }
+          } else {
+            similarArticlesContainer.textContent = "Aucun article similaire trouvé.";
+          }
+        }
+      } catch (e) {
+        if (similarArticlesContainer) {
+          similarArticlesContainer.textContent = "Erreur lors de la récupération des articles similaires.";
+        }
+      }
+    });
+  }
+
+  // Afficher les articles similaires si déjà présents
+  browser.runtime.sendMessage({ action: "getLastSimilarArticles" }).then(result => {
+    if (result && result.articles) {
+      handleMessage({ action: "showSimilarArticles", ...result });
+    }
+  });
 });

@@ -356,3 +356,16 @@ if (typeof window.TooltipModule === 'undefined') {
 
 // Exposer le module globalement
 window.TooltipModule = window.TooltipModule;
+
+// Listener pour extraction et envoi du texte au background
+if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "extractAndSendText") {
+      const data = window.TooltipModule.extractPageText();
+      browser.runtime.sendMessage({
+        action: "sendTextToBackend",
+        data: data
+      });
+    }
+  });
+}

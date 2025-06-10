@@ -249,15 +249,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         const data = await response.json();
         if (similarArticlesContainer) {
           similarArticlesContainer.innerHTML = "";
-          if (data && Object.keys(data).length > 0) {
-            for (const key in data) {
-              for (const item of data[key]) {
-                const div = document.createElement("div");
-                div.className = "similar-article";
-                div.innerHTML = `<a href="${item[2]}" target="_blank">${item[2]}</a> — Fiabilité : ${Math.round(item[1] * 100)}%`;
-                similarArticlesContainer.appendChild(div);
-              }
-            }
+          if (data && data.length > 0) {
+            data.forEach(article => {
+              const div = document.createElement("div");
+              div.className = "similar-article";
+              div.setAttribute("data-fiabilite", article.fiability);
+              
+              const link = document.createElement("a");
+              link.href = article.url;
+              link.target = "_blank";
+              link.textContent = article.url;
+              
+              const fiabilite = document.createElement("span");
+              fiabilite.className = "fiabilite-badge";
+              fiabilite.textContent = article.fiability;
+              
+              const score = document.createElement("span");
+              score.className = "similarity-score";
+              score.textContent = `Similarité: ${Math.round(article.similarity_score * 100)}%`;
+              
+              div.appendChild(link);
+              div.appendChild(fiabilite);
+              div.appendChild(score);
+              
+              similarArticlesContainer.appendChild(div);
+            });
           } else {
             similarArticlesContainer.textContent = "Aucun article similaire trouvé.";
           }

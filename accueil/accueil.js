@@ -1,31 +1,39 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Popup chargé");
-
   const highlightButton = document.getElementById("highlightButton");
   const evaluer = document.getElementById("evaluer");
   const scoreFiabilite = document.getElementById("scoreFiabilite");
   const submitFeedback = document.getElementById("submitFeedback");
   const scoreContainer = document.querySelector(".score-container");
+  const resetButton = document.getElementById("resetButton");
+  const similarArticlesContainer = document.getElementById("similarArticlesContainer");
+  const similarArticlesButton = document.getElementById("similarArticlesButton");
+
+  let analysisState = { // État local du popup
+    isAnalyzing: false,
+    startTime: null,
+    lastData: null,
+    timerInterval: null
+  };
 
   // Fonction pour mettre à jour l'interface avec un score
   function updateInterface(data, error = null) {
-    console.log("Mise à jour de l'interface avec:", { data, error });
-    
+    analysisState.lastData = data;
+    analysisState.isAnalyzing = false;
+    clearInterval(analysisState.timerInterval);
+    analysisState.timerInterval = null;
+    analysisState.startTime = null;
+
     if (error) {
       scoreFiabilite.textContent = "Erreur: " + error;
       highlightButton.disabled = false;
       highlightButton.textContent = "Analyser les liens";
+      if (similarArticlesButton) similarArticlesButton.style.display = "none";
       return;
     }
 
-    if (data?.main_url) {
+    if (data?.main_url && typeof data.main_url.score_fiable_global === "number") {
       const scoreFiable = data.main_url.score_fiable_global;
-      const scoreFaux = data.main_url.score_faux_global;
-      
       const scoreFiablePercent = Math.round(scoreFiable * 100);
-      const scoreFauxPercent = Math.round(scoreFaux * 100);
-      
-      console.log("Affichage des scores:", { scoreFiablePercent, scoreFauxPercent });
       
       scoreFiabilite.textContent = `Score de fiabilité: ${scoreFiablePercent}%`;
       updateScoreIndicator(scoreFiablePercent);
@@ -36,11 +44,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (evaluer) {
         evaluer.style.display = "block";
       }
+      if (similarArticlesButton) similarArticlesButton.style.display = "block";
     } else {
-      console.log("Données invalides reçues:", data);
       scoreFiabilite.textContent = "Erreur: Données invalides";
       highlightButton.disabled = false;
       highlightButton.textContent = "Analyser les liens";
+      if (similarArticlesButton) similarArticlesButton.style.display = "none";
     }
   }
 
@@ -48,9 +57,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   function updateScoreIndicator(score) {
     scoreContainer.classList.remove("score-low", "score-medium", "score-high");
     
-    if (score < 45) {
+    if (score < 60) {
       scoreContainer.classList.add("score-low");
-    } else if (score >= 45 && score < 70) {
+    } else if (score >= 60 && score < 85) {
       scoreContainer.classList.add("score-medium");
     } else {
       scoreContainer.classList.add("score-high");
@@ -58,47 +67,46 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Fonction pour mettre à jour l'interface pendant l'analyse
-  function updateInterfaceAnalyzing() {
+  function updateInterfaceAnalyzing(startTime = Date.now()) {
+    analysisState.isAnalyzing = true;
+    analysisState.startTime = startTime;
     highlightButton.disabled = true;
     highlightButton.textContent = "Analyse en cours...";
-    scoreFiabilite.textContent = "Analyse en cours...";
+    
+    // Démarrer ou reprendre le timer
+    if (!analysisState.timerInterval) {
+      const updateElapsedTime = () => {
+        const elapsed = Math.floor((Date.now() - analysisState.startTime) / 1000);
+        scoreFiabilite.textContent = `Analyse en cours... (${elapsed}s)`;
+      };
+      updateElapsedTime(); // Mettre à jour immédiatement
+      analysisState.timerInterval = setInterval(updateElapsedTime, 1000);
+    }
   }
 
-  // Vérifier l'état actuel et restaurer si nécessaire
+  // Charger l'état sauvegardé au démarrage
   try {
-    const response = await browser.runtime.sendMessage({ action: "checkStatus" });
-    console.log("État actuel:", response);
-
-    if (response.isPending || response.isAnalyzing) {
-      updateInterfaceAnalyzing();
-      
-      // Mettre à jour le temps écoulé
-      if (response.startTime) {
-        const updateElapsedTime = () => {
-          const elapsed = Math.floor((Date.now() - response.startTime) / 1000);
-          scoreFiabilite.textContent = `Analyse en cours... (${elapsed}s)`;
-        };
-        updateElapsedTime();
-        const timer = setInterval(updateElapsedTime, 1000);
-        
-        // Nettoyer le timer si le popup se ferme
-        window.addEventListener('unload', () => clearInterval(timer));
-      }
-    } else if (response.lastData) {
-      console.log("Restauration des dernières données:", response.lastData);
-      updateInterface(response.lastData);
+    const { savedAnalysisState } = await browser.storage.local.get("savedAnalysisState");
+    if (savedAnalysisState && savedAnalysisState.isAnalyzing) {
+      // Restaurer l'état si une analyse était en cours
+      analysisState.isAnalyzing = true;
+      analysisState.startTime = savedAnalysisState.startTime;
+      analysisState.lastData = savedAnalysisState.lastData; // Conserver les dernières données si elles existent
+      updateInterfaceAnalyzing(analysisState.startTime);
+    } else if (savedAnalysisState && savedAnalysisState.lastData) {
+      // Restaurer les dernières données si l'analyse était terminée
+      analysisState.lastData = savedAnalysisState.lastData;
+      updateInterface(analysisState.lastData);
     }
   } catch (error) {
-    console.error("Erreur lors de la vérification de l'état:", error);
+    console.error("Erreur lors du chargement de l'état sauvegardé:", error);
   }
 
   // Gestionnaire du bouton d'analyse
   if (highlightButton) {
     highlightButton.addEventListener("click", () => {
-      console.log("Démarrage de l'analyse...");
       updateInterfaceAnalyzing();
       
-      // Extraire et envoyer les liens pour analyse
       browser.tabs.query({ active: true, currentWindow: true })
         .then(tabs => {
           if (tabs[0]) {
@@ -127,7 +135,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
           });
 
-          console.log("Feedback envoyé:", selectedFeedback.value);
           submitFeedback.textContent = "Merci pour votre avis !";
           submitFeedback.disabled = true;
         } catch (error) {
@@ -158,22 +165,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Établir une connexion avec le background script
   const port = browser.runtime.connect({ name: "popup-port" });
   
-  // Écouter les messages sur le port
-  port.onMessage.addListener((message) => {
-    console.log("Message reçu sur le port:", message);
-    if (message.action === "displayScore") {
-      if (message.error) {
-        updateInterface(null, message.error);
-      } else {
-        updateInterface(message.data);
-      }
-    }
-  });
-
-  // Écouter les messages normaux aussi
-  browser.runtime.onMessage.addListener(message => {
-    console.log("Message reçu dans accueil.js:", message);
-    
+  // Écouter les messages
+  const handleMessage = (message) => {
     if (message.action === "displayScore") {
       if (message.error) {
         updateInterface(null, message.error);
@@ -182,11 +175,121 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } else if (message.action === "analysisStarted") {
       updateInterfaceAnalyzing();
+    } else if (message.action === "showSimilarArticles") {
+      if (similarArticlesContainer) {
+        similarArticlesContainer.innerHTML = "";
+        if (message.articles && message.articles.length > 0) {
+          message.articles.forEach(article => {
+            const div = document.createElement("div");
+            div.className = "similar-article";
+            div.innerHTML = `<a href="${article.url}" target="_blank">${article.url}</a> — Fiabilité : ${Math.round(article.fiabilite * 100)}%`;
+            similarArticlesContainer.appendChild(div);
+          });
+        } else {
+          similarArticlesContainer.textContent = message.error || "Aucun article similaire trouvé.";
+        }
+      }
     }
+  };
+
+  port.onMessage.addListener(handleMessage);
+  browser.runtime.onMessage.addListener(handleMessage); // Pour les messages diffusés
+
+  // Sauvegarder l'état avant la fermeture du popup
+  window.addEventListener('unload', () => {
+    browser.storage.local.set({
+      savedAnalysisState: {
+        isAnalyzing: analysisState.isAnalyzing,
+        startTime: analysisState.startTime,
+        lastData: analysisState.lastData // Sauvegarder les dernières données reçues
+      }
+    });
+    port.disconnect();
+    // Ne pas clearInterval ici, car le timer continue dans le background script
   });
 
-  // Nettoyer la connexion quand le popup se ferme
-  window.addEventListener('unload', () => {
-    port.disconnect();
+  // Gestionnaire du bouton reset
+  if (resetButton) {
+    resetButton.addEventListener("click", async () => {
+      // Vider le cache local et l'état
+      await browser.storage.local.clear();
+      clearInterval(analysisState.timerInterval);
+      analysisState = {
+        isAnalyzing: false,
+        startTime: null,
+        lastData: null,
+        timerInterval: null
+      };
+      scoreFiabilite.textContent = "Cliquez sur Analyser pour commencer";
+      scoreContainer.classList.remove("score-low", "score-medium", "score-high");
+      highlightButton.disabled = false;
+      highlightButton.textContent = "Analyser les liens";
+      if (evaluer) {
+        evaluer.style.display = "none";
+      }
+      // Réinitialiser le feedback
+      document.querySelectorAll("input[name='feedback']").forEach(r => r.checked = false);
+      submitFeedback.textContent = "Envoyer mon avis";
+      submitFeedback.disabled = false;
+    });
+  }
+
+  // Gestionnaire du bouton 'Articles similaires'
+  if (similarArticlesButton) {
+    similarArticlesButton.addEventListener("click", async () => {
+      if (!analysisState.lastData) return;
+      try {
+        console.log("Récupération des articles similaires");
+        console.log(analysisState.lastData);
+        const response = await fetch("http://127.0.0.1:5003/get_similar_articl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(analysisState.lastData)
+        });
+        const data = await response.json();
+        if (similarArticlesContainer) {
+          similarArticlesContainer.innerHTML = "";
+          if (data && data.length > 0) {
+            data.forEach(article => {
+              const div = document.createElement("div");
+              div.className = "similar-article";
+              div.setAttribute("data-fiabilite", article.fiability);
+              
+              const link = document.createElement("a");
+              link.href = article.url;
+              link.target = "_blank";
+              link.textContent = article.url;
+              
+              const fiabilite = document.createElement("span");
+              fiabilite.className = "fiabilite-badge";
+              fiabilite.textContent = article.fiability;
+              
+              const score = document.createElement("span");
+              score.className = "similarity-score";
+              score.textContent = `Similarité: ${Math.round(article.similarity_score * 100)}%`;
+              
+              div.appendChild(link);
+              div.appendChild(fiabilite);
+              div.appendChild(score);
+              
+              similarArticlesContainer.appendChild(div);
+            });
+          } else {
+            similarArticlesContainer.textContent = "Aucun article similaire trouvé.";
+          }
+        }
+      } catch (e) {
+        if (similarArticlesContainer) {
+          similarArticlesContainer.textContent = "Erreur lors de la récupération des articles similaires.";
+        }
+      }
+    });
+  }
+
+  // Afficher les articles similaires si déjà présents
+  browser.runtime.sendMessage({ action: "getLastSimilarArticles" }).then(result => {
+    if (result && result.articles) {
+      handleMessage({ action: "showSimilarArticles", ...result });
+    }
   });
 });

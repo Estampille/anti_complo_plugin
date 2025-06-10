@@ -194,3 +194,68 @@ h1 {
 #evaluer {
   display: none;
 }
+
+/* Styles pour le module des articles similaires */
+#similarArticlesContainer {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--elevation-1);
+}
+
+.similar-article {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: rgba(var(--card-bg-color-rgb), 0.5);
+  border-radius: var(--border-radius-md);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.similar-article:hover {
+  background-color: rgba(var(--card-bg-color-rgb), 0.8);
+  transform: translateX(5px);
+}
+
+.similar-article a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-block;
+  word-break: break-all;
+}
+
+.similar-article a:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+.fiabilite-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.similar-article[data-fiabilite="fiable"] .fiabilite-badge {
+  background-color: rgba(50, 205, 50, 0.2);
+  color: rgb(50, 205, 50);
+}
+
+.similar-article[data-fiabilite="non fiable"] .fiabilite-badge {
+  background-color: rgba(255, 99, 71, 0.2);
+  color: rgb(255, 99, 71);
+}
+
+.similarity-score {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.8;
+}

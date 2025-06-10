@@ -1,190 +1,261 @@
 // Module de gestion des infobulles
+console.log('🔄 Chargement du module Tooltip...');
+
 window.TooltipModule = (function() {
+  console.log('📦 Initialisation du module Tooltip...');
+  
   let activeTooltip = null;
   let moveHandler = null;
   let paragraphScores = null;
   let globalScore = null;
-  let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  let scoreCache = new Map(); // Cache pour les scores
+  let debounceTimer = null; // Pour le debounce des événements
 
-  // Gestionnaire pour mettre à jour la position du score
-  function initScorePosition() {
-    document.addEventListener('mousemove', (e) => {
-      const hoveredElement = document.elementFromPoint(e.clientX, e.clientY);
-      if (hoveredElement && hoveredElement.classList.contains('score-highlight')) {
-        const score = hoveredElement.getAttribute('data-score');
-        if (score) {
-          hoveredElement.style.setProperty('--score-x', `${e.clientX}px`);
-          hoveredElement.style.setProperty('--score-y', `${e.clientY}px`);
-        }
-      }
+  // Fonction de debounce pour optimiser les performances
+  function debounce(func, wait) {
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(debounceTimer);
+        func(...args);
+      };
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(later, wait);
+    };
+  }
+
+  // Fonction pour mettre en cache un score
+  function cacheScore(text, score) {
+    const key = text.toLowerCase().trim();
+    scoreCache.set(key, {
+      score,
+      timestamp: Date.now()
     });
   }
 
-  // Fonction pour récupérer tous les paragraphes de texte de la page
-  function getAllPageParagraphs() {
+  // Fonction pour récupérer un score du cache
+  function getCachedScore(text) {
+    const key = text.toLowerCase().trim();
+    const cached = scoreCache.get(key);
+    if (cached && Date.now() - cached.timestamp < 30 * 60 * 1000) { // Cache valide 30 minutes
+      return cached.score;
+    }
+    return null;
+  }
+
+  // Fonction pour nettoyer le cache
+  function clearCache() {
+    scoreCache.clear();
+  }
+
+  // Fonction d'extraction de texte
+  function extractPageText() {
+    console.log('📄 Début extraction de texte...');
     const paragraphs = [];
     
-    // Fonction récursive pour parcourir le DOM
-    function extractTextFromNode(node) {
-      // Ignorer les scripts, styles, et autres éléments non pertinents
-      if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE' || 
-          node.nodeName === 'NOSCRIPT' || node.nodeName === 'IFRAME') {
-        return;
+    // Sélecteurs pour les paragraphes
+    const selector = 'article p, section p, div p, p';
+    const candidates = Array.from(document.querySelectorAll(selector));
+    console.log(`🔍 ${candidates.length} éléments trouvés`);
+
+    const isVisible = (el) => {
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+    };
+
+    const isRelevant = (el) => {
+      const text = el.textContent.trim();
+      return text.length > 50 && !el.closest('header, footer, nav, aside, form, menu') && isVisible(el);
+    };
+
+    // Extraire les paragraphes pertinents
+    candidates.forEach(el => {
+      if (isRelevant(el)) {
+        paragraphs.push({
+          element: el,
+          text: el.textContent.trim()
+        });
       }
+    });
 
-      // Si c'est un nœud texte avec du contenu significatif
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent.trim();
-        if (text.length > 0) {
-          // Remonter jusqu'au parent block le plus proche
-          let parent = node.parentElement;
-          while (parent && window.getComputedStyle(parent).display !== 'block') {
-            parent = parent.parentElement;
-          }
-          if (parent) {
-            paragraphs.push({
-              element: parent,
-              text: parent.textContent.trim()
-            });
-          }
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // Récursivement parcourir les enfants
-        for (const child of node.childNodes) {
-          extractTextFromNode(child);
-        }
+    // Supprimer les doublons
+    const seen = new Set();
+    const uniqueParagraphs = paragraphs.filter(p => {
+      const hash = p.text.slice(0, 150);
+      if (seen.has(hash)) return false;
+      seen.add(hash);
+      return true;
+    });
+
+    // Formater pour l'API
+    const formattedParagraphs = uniqueParagraphs.map(p => p.text);
+    return {
+      urls: [],
+      main_url: {
+        url: window.location.href,
+        scores_paragraphes: formattedParagraphs
       }
-    }
-
-    // Commencer l'extraction depuis le body
-    extractTextFromNode(document.body);
-
-    // Éliminer les doublons (même élément parent)
-    const uniqueParagraphs = Array.from(new Map(
-      paragraphs.map(p => [p.element, p])
-    ).values());
-
-    console.log(`📝 Trouvé ${uniqueParagraphs.length} blocs de texte uniques dans la page`);
-    return uniqueParagraphs;
+    };
   }
 
-  // Fonction pour définir les scores
+  // Fonction pour appliquer les scores
   function setScores(data) {
-    console.log("Mise à jour des scores avec:", JSON.stringify(data, null, 2));
-    if (data?.main_url) {
-      paragraphScores = data.main_url.scores_paragraphes || [];
-      globalScore = data.main_url.score_fiable_global;
-      console.log("Nombre de paragraphes avec scores:", paragraphScores.length);
-      
-      // Récupérer tous les paragraphes de la page
-      const pageParagraphs = getAllPageParagraphs();
-      
-      // Pour chaque paragraphe de l'API
-      paragraphScores.forEach((scoredParagraph, index) => {
-        const apiWords = getFirstAndLastWords(scoredParagraph.texte);
-        if (!apiWords) return;
+    if (!data?.main_url?.scores_paragraphes) return;
 
-        console.log(`\n🔍 Recherche correspondance pour paragraphe API #${index + 1}`);
-        console.log("Premier mot:", apiWords.first);
-        console.log("Dernier mot:", apiWords.last);
+    paragraphScores = data.main_url.scores_paragraphes;
+    globalScore = data.main_url.score_fiable_global;
 
-        // Chercher dans les paragraphes de la page
-        for (const {element, text} of pageParagraphs) {
-          if (text.includes(apiWords.first) && text.includes(apiWords.last)) {
-            console.log("✅ Correspondance trouvée dans:", 
-              text.substring(0, 50) + "...");
-            
-            // Appliquer le score et la couleur
-            wrapTextWithScore(element, {
-              fiable: scoredParagraph.Fiable,
-              faux: scoredParagraph.Faux
-            });
-            break;
-          }
+    // Nettoyer les anciens écouteurs
+    cleanupPreviousListeners();
+
+    // Appliquer les scores aux paragraphes
+    const pageParagraphs = getAllPageParagraphs();
+    paragraphScores.forEach(scoredParagraph => {
+      for (const {element, text} of pageParagraphs) {
+        if (text.toLowerCase().trim() === scoredParagraph.texte.toLowerCase().trim()) {
+          wrapTextWithScore(element, {
+            fiable: scoredParagraph.Fiable,
+            faux: scoredParagraph.Faux
+          });
+          addTooltipListeners(element);
+          break;
         }
+      }
+    });
+
+    // Appliquer le score global aux liens
+    if (globalScore !== null) {
+      document.querySelectorAll('a[href^="http"]').forEach(link => {
+        addTooltipListeners(link);
+        link.setAttribute('data-score', Math.round(globalScore * 100));
       });
-    } else {
-      paragraphScores = null;
-      globalScore = null;
-      console.log("Réinitialisation des scores - données invalides");
     }
   }
 
-  // Fonction pour afficher une infobulle
+  // Fonction pour ajouter les écouteurs d'infobulle
+  function addTooltipListeners(element) {
+    const enterHandler = () => showTooltip(element);
+    const leaveHandler = () => hideTooltip();
+
+    element._tooltipEnterHandler = enterHandler;
+    element._tooltipLeaveHandler = leaveHandler;
+    
+    element.addEventListener('mouseenter', enterHandler);
+    element.addEventListener('mouseleave', leaveHandler);
+    element.classList.add('has-tooltip');
+  }
+
+  // Fonction pour nettoyer les écouteurs
+  function cleanupPreviousListeners() {
+    document.querySelectorAll('.has-tooltip').forEach(el => {
+      if (el._tooltipEnterHandler) el.removeEventListener('mouseenter', el._tooltipEnterHandler);
+      if (el._tooltipLeaveHandler) el.removeEventListener('mouseleave', el._tooltipLeaveHandler);
+      el.classList.remove('has-tooltip');
+    });
+  }
+
+  // Fonction pour obtenir tous les paragraphes
+  function getAllPageParagraphs() {
+    const paragraphs = [];
+    const selector = 'article p, section p, div p, p';
+    
+    document.querySelectorAll(selector).forEach(p => {
+      const text = p.textContent.trim();
+      if (text && text.length > 150) {
+        paragraphs.push({ element: p, text: text });
+      }
+    });
+
+    return paragraphs;
+  }
+
+  // Fonction pour encapsuler le texte avec le score
+  function wrapTextWithScore(element, score) {
+    const colorClass = getColorClass(score.fiable);
+    const scorePercent = Math.round(score.fiable * 100);
+    element.classList.add('score-highlight', colorClass);
+    element.setAttribute('data-score', scorePercent);
+  }
+
+  // Fonction pour obtenir la classe de couleur
+  function getColorClass(fiableScore) {
+    if (fiableScore >= 0.85) return 'score-high';
+    if (fiableScore >= 0.6) return 'score-medium';
+    return 'score-low';
+  }
+
+  // Fonction pour afficher l'infobulle
   function showTooltip(element) {
     hideTooltip();
 
     const tooltip = document.createElement('div');
     tooltip.className = 'mylink-tooltip';
     tooltip.id = 'mylink-tooltip';
+    tooltip.style.whiteSpace = 'pre-line';
+    tooltip.style.position = 'fixed';
+    tooltip.style.zIndex = '10000';
 
     let scores = null;
-    let tooltipContent = '';
-
     if (element.tagName.toLowerCase() === 'p') {
       scores = findScoreForText(element);
       if (scores) {
-        tooltipContent = formatTooltipContent(scores);
+        tooltip.textContent = formatTooltipContent(scores);
         tooltip.classList.add(getColorClass(scores.fiable));
       } else {
-        tooltipContent = "Paragraphe non analysé";
+        tooltip.textContent = "Paragraphe non analysé";
         tooltip.classList.add('mylink-tooltip-neutral');
       }
-    }
-
-    tooltip.style.whiteSpace = 'pre-line';
-    tooltip.textContent = tooltipContent;
-
-    // Ajouter un bouton de fermeture pour mobile
-    if (isMobile) {
-      const closeButton = document.createElement('button');
-      closeButton.className = 'tooltip-close';
-      closeButton.innerHTML = '×';
-      closeButton.onclick = hideTooltip;
-      tooltip.appendChild(closeButton);
+    } else if (element.tagName.toLowerCase() === 'a' && globalScore !== null) {
+      scores = { fiable: globalScore, faux: 1 - globalScore };
+      tooltip.textContent = formatTooltipContent(scores);
+      tooltip.classList.add(getColorClass(globalScore));
+    } else {
+      tooltip.textContent = "Lien non analysé";
+      tooltip.classList.add('mylink-tooltip-neutral');
     }
 
     document.body.appendChild(tooltip);
     activeTooltip = tooltip;
 
-    const updatePosition = (e) => {
+    const updatePosition = debounce(() => {
       const rect = element.getBoundingClientRect();
       const tooltipRect = tooltip.getBoundingClientRect();
-      
-      let left, top;
+      const padding = 15;
 
-      if (isMobile) {
-        // Sur mobile, centrer l'infobulle en bas de l'écran
-        left = (window.innerWidth - tooltipRect.width) / 2;
-        top = window.innerHeight - tooltipRect.height - 20;
-      } else {
-        // Sur desktop, positionner près du curseur
-        left = e.pageX + 15;
-        top = e.pageY + 15;
+      // Positionner l'infobulle à droite du texte
+      let left = rect.right + padding;
+      let top = rect.top;
 
-        if (left + tooltipRect.width > window.innerWidth) {
-          left = e.pageX - tooltipRect.width - 15;
-        }
+      // Si l'infobulle dépasse à droite, la positionner à gauche
+      if (left + tooltipRect.width > window.innerWidth) {
+        left = rect.left - tooltipRect.width - padding;
+      }
 
-        if (top + tooltipRect.height > window.innerHeight) {
-          top = e.pageY - tooltipRect.height - 15;
-        }
+      // Si l'infobulle dépasse en bas, la remonter
+      if (top + tooltipRect.height > window.innerHeight) {
+        top = window.innerHeight - tooltipRect.height - padding;
+      }
+
+      // S'assurer que l'infobulle ne dépasse pas en haut
+      if (top < padding) {
+        top = padding;
       }
 
       tooltip.style.left = `${left}px`;
       tooltip.style.top = `${top}px`;
+    }, 10); // Debounce de 10ms
+
+    // Mettre à jour la position immédiatement et lors du défilement
+    updatePosition();
+    window.addEventListener('scroll', updatePosition);
+    window.addEventListener('resize', updatePosition);
+
+    // Nettoyer les écouteurs lors de la fermeture de l'infobulle
+    const cleanup = () => {
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
     };
 
-    moveHandler = updatePosition;
-    
-    if (!isMobile) {
-      element.addEventListener('mousemove', moveHandler);
-    }
-
-    updatePosition({ 
-      pageX: element.getBoundingClientRect().right, 
-      pageY: element.getBoundingClientRect().top 
-    });
+    element.addEventListener('mouseleave', cleanup);
   }
 
   // Fonction pour masquer l'infobulle
@@ -193,132 +264,25 @@ window.TooltipModule = (function() {
       activeTooltip.remove();
       activeTooltip = null;
     }
-
     if (moveHandler) {
-      document.querySelectorAll('p').forEach(element => {
+      document.querySelectorAll('p, a').forEach(element => {
         element.removeEventListener('mousemove', moveHandler);
       });
       moveHandler = null;
     }
   }
 
-  // Fonction pour charger les styles des infobulles
-  function loadTooltipStyles() {
-    try {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = browser.runtime.getURL('accueil/infobulles.css');
-      document.head.appendChild(link);
-      initScorePosition(); // Initialiser le gestionnaire de position
-
-      // Ajouter les écouteurs d'événements tactiles pour mobile
-      if (isMobile) {
-        document.querySelectorAll('p').forEach(element => {
-          element.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            showTooltip(element);
-          });
-        });
-
-        // Fermer l'infobulle en touchant en dehors
-        document.addEventListener('touchstart', (e) => {
-          if (activeTooltip && !activeTooltip.contains(e.target)) {
-            hideTooltip();
-          }
-        });
-      }
-    } catch (error) {
-      console.warn('Erreur lors du chargement des styles:', error);
-    }
-  }
-
-  // Fonction pour obtenir le premier et dernier mot significatif d'un texte
-  function getFirstAndLastWords(text) {
-    if (!text) {
-      console.log("❌ Texte vide ou invalide");
-      return null;
-    }
-
-    console.log("\n📝 Analyse du texte:");
-    console.log("Texte original:", text.substring(0, 199) + "...");
-
-    // Séparer le texte en mots (sans modification du texte)
-    const words = text.trim().split(/\s+/);
-
-    if (words.length < 2) {
-      console.log("❌ Pas assez de mots");
-      return null;
-    }
-
-    const result = {
-      first: words[0],
-      last: words[words.length - 1],
-      fullText: text
-    };
-
-    console.log("✓ Résultat analyse:", result);
-    return result;
-  }
-
-  // Fonction pour trouver le score correspondant au texte
-  function findScoreForText(element) {
-    if (!paragraphScores) {
-      console.log("❌ Pas de scores de paragraphes disponibles");
-      return null;
-    }
-
-    const elementText = element.textContent;
-    console.log("\n🔍 DÉBUT RECHERCHE DE CORRESPONDANCE");
-    console.log("Texte de l'élément:", elementText.substring(0, 100) + "...");
-
-    // Obtenir les mots clés du texte de l'élément
-    const elementWords = getFirstAndLastWords(elementText);
-    if (!elementWords) {
-      console.log("❌ Échec analyse du texte de l'élément");
-      return null;
-    }
-
-    // Chercher dans les scores
-    for (const [index, scored] of paragraphScores.entries()) {
-      const scoredWords = getFirstAndLastWords(scored.texte);
-      if (!scoredWords) continue;
-
-      // Vérifier la correspondance exacte des premiers et derniers mots
-      if (elementWords.first === scoredWords.first && 
-          elementWords.last === scoredWords.last) {
-        console.log("✅ CORRESPONDANCE EXACTE TROUVÉE !");
-        const score = {
-          fiable: scored.Fiable,
-          faux: scored.Faux
-        };
-        // Encapsuler le texte avec la couleur et le score
-        wrapTextWithScore(element, score);
-        return score;
-      }
-    }
-    
-    console.log("❌ AUCUNE CORRESPONDANCE TROUVÉE");
-    return null;
-  }
-
   // Fonction pour formater le contenu de l'infobulle
   function formatTooltipContent(scores) {
     if (!scores) return "Score non disponible";
-
     const fiablePercent = Math.round(scores.fiable * 100);
     const fauxPercent = Math.round(scores.faux * 100);
-    
-    console.log("Formatage du tooltip:", {
-      scoresFiable: fiablePercent,
-      scoresFaux: fauxPercent
-    });
-    
-    let message = `Fiabilité: ${fiablePercent}%\nDoute: ${fauxPercent}%`;
+    let message = `Fiabilité: ${fiablePercent}%`;
     
     // Ajouter un message qualitatif
-    if (scores.fiable >= 0.7) {
-      message += "\n✓ Contenu fiable";
-    } else if (scores.fiable >= 0.4) {
+    if (scores.fiable >= 0.85) {
+      message += "\n✓ Contenu très fiable";
+    } else if (scores.fiable >= 0.6) {
       message += "\n⚠ Fiabilité moyenne";
     } else {
       message += "\n⚠ Contenu peu fiable";
@@ -327,40 +291,81 @@ window.TooltipModule = (function() {
     return message;
   }
 
-  // Fonction pour obtenir la classe de couleur
-  function getColorClass(fiableScore) {
-    if (fiableScore >= 0.7) return 'score-high';
-    if (fiableScore >= 0.4) return 'score-medium';
-    return 'score-low';
+  // Fonction pour trouver le score d'un texte
+  function findScoreForText(element) {
+    if (!paragraphScores) return null;
+    const elementText = element.textContent.toLowerCase().trim();
+
+    // Vérifier d'abord le cache
+    const cachedScore = getCachedScore(elementText);
+    if (cachedScore) return cachedScore;
+
+    // Si pas en cache, chercher dans les scores
+    for (const scored of paragraphScores) {
+      if (scored.texte.toLowerCase().trim() === elementText) {
+        const score = {
+          fiable: scored.Fiable,
+          faux: scored.Faux
+        };
+        // Mettre en cache
+        cacheScore(elementText, score);
+        return score;
+      }
+    }
+    return null;
   }
 
-  // Fonction pour encapsuler le texte avec la couleur et le score
-  function wrapTextWithScore(element, score) {
-    // Nouveau comportement : n'ajoute qu'une classe et un data-score, sans toucher au contenu
-    const colorClass = getColorClass(score.fiable);
-    const scorePercent = Math.round(score.fiable * 100);
-    element.classList.add('score-highlight', colorClass);
-    element.setAttribute('data-score', scorePercent);
+  // Fonction pour charger les styles
+  function loadTooltipStyles() {
+    try {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = browser.runtime.getURL('accueil/infobulles.css');
+      document.head.appendChild(link);
+    } catch (error) {
+      console.warn('Erreur lors du chargement des styles:', error);
+    }
   }
 
-  // Fonction pour vérifier si des scores sont disponibles
-  function hasScores() {
-    return Array.isArray(paragraphScores) && paragraphScores.length > 0;
-  }
-
-  // Fonction pour vérifier si un score global est disponible
-  function hasGlobalScore() {
-    return globalScore !== null;
-  }
-
+  // Initialisation
+  loadTooltipStyles();
   window.addEventListener('unload', hideTooltip);
 
+  // Exposer les fonctions nécessaires
   return {
     showTooltip,
     hideTooltip,
     loadTooltipStyles,
     setScores,
-    hasScores,
-    hasGlobalScore
+    hasScores: () => Array.isArray(paragraphScores) && paragraphScores.length > 0,
+    hasGlobalScore: () => globalScore !== null,
+    extractPageText,
+    clearCache
   };
 })();
+
+// Vérification de l'initialisation
+if (typeof window.TooltipModule === 'undefined') {
+  console.error('❌ ERREUR: Module Tooltip non initialisé');
+} else {
+  console.log('✅ Module Tooltip disponible globalement');
+  // Test d'extraction immédiat
+  console.log('🧪 Test d\'extraction de texte...');
+  window.TooltipModule.extractPageText();
+}
+
+// Exposer le module globalement
+window.TooltipModule = window.TooltipModule;
+
+// Listener pour extraction et envoi du texte au background
+if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "extractAndSendText") {
+      const data = window.TooltipModule.extractPageText();
+      browser.runtime.sendMessage({
+        action: "sendTextToBackend",
+        data: data
+      });
+    }
+  });
+}

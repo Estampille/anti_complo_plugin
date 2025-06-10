@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const scoreFiabilite = document.getElementById("scoreFiabilite");
   const submitFeedback = document.getElementById("submitFeedback");
   const scoreContainer = document.querySelector(".score-container");
+  const resetButton = document.getElementById("resetButton");
 
   let analysisState = { // État local du popup
     isAnalyzing: false,
@@ -188,4 +189,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     port.disconnect();
     // Ne pas clearInterval ici, car le timer continue dans le background script
   });
+
+  // Gestionnaire du bouton reset
+  if (resetButton) {
+    resetButton.addEventListener("click", async () => {
+      // Vider le cache local et l'état
+      await browser.storage.local.clear();
+      clearInterval(analysisState.timerInterval);
+      analysisState = {
+        isAnalyzing: false,
+        startTime: null,
+        lastData: null,
+        timerInterval: null
+      };
+      scoreFiabilite.textContent = "Cliquez sur Analyser pour commencer";
+      scoreContainer.classList.remove("score-low", "score-medium", "score-high");
+      highlightButton.disabled = false;
+      highlightButton.textContent = "Analyser les liens";
+      if (evaluer) {
+        evaluer.style.display = "none";
+      }
+      // Réinitialiser le feedback
+      document.querySelectorAll("input[name='feedback']").forEach(r => r.checked = false);
+      submitFeedback.textContent = "Envoyer mon avis";
+      submitFeedback.disabled = false;
+    });
+  }
 });

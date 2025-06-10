@@ -277,7 +277,7 @@ window.TooltipModule = (function() {
     if (!scores) return "Score non disponible";
     const fiablePercent = Math.round(scores.fiable * 100);
     const fauxPercent = Math.round(scores.faux * 100);
-    let message = `Fiabilité: ${fiablePercent}%\nDoute: ${fauxPercent}%`;
+    let message = `Fiabilité: ${fiablePercent}%`;
     
     // Ajouter un message qualitatif
     if (scores.fiable >= 0.85) {
@@ -340,7 +340,7 @@ window.TooltipModule = (function() {
     hasScores: () => Array.isArray(paragraphScores) && paragraphScores.length > 0,
     hasGlobalScore: () => globalScore !== null,
     extractPageText,
-    clearCache // Exposer la fonction de nettoyage du cache
+    clearCache
   };
 })();
 

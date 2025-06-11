@@ -64,7 +64,10 @@ window.TooltipModule = (function() {
 
     const isRelevant = (el) => {
       const text = el.textContent.trim();
-      return text.length > 50 && !el.closest('header, footer, nav, aside, form, menu') && isVisible(el);
+      // Vérifier si l'élément ou ses parents ont une classe contenant "comment" ou "bottom"
+      const hasCommentClass = el.closest('[class*="comment"]') !== null;
+      const hasBottomClass = el.closest('[class*="bottom"]') !== null;
+      return text.length > 50 && !hasCommentClass && !hasBottomClass && !el.closest('header, footer, nav, aside, form, menu') && isVisible(el);
     };
 
     // Extraire les paragraphes pertinents
@@ -99,36 +102,28 @@ window.TooltipModule = (function() {
 
   // Fonction pour appliquer les scores
   function setScores(data) {
-    if (!data?.main_url?.scores_paragraphes) return;
+    if (!data?.main_url?.score_fiable_global) return;
 
-    paragraphScores = data.main_url.scores_paragraphes;
     globalScore = data.main_url.score_fiable_global;
 
     // Nettoyer les anciens écouteurs
     cleanupPreviousListeners();
 
-    // Appliquer les scores aux paragraphes
+    // Appliquer le score global à tous les paragraphes
     const pageParagraphs = getAllPageParagraphs();
-    paragraphScores.forEach(scoredParagraph => {
-      for (const {element, text} of pageParagraphs) {
-        if (text.toLowerCase().trim() === scoredParagraph.texte.toLowerCase().trim()) {
-          wrapTextWithScore(element, {
-            fiable: scoredParagraph.Fiable,
-            faux: scoredParagraph.Faux
-          });
-          addTooltipListeners(element);
-          break;
-        }
-      }
+    pageParagraphs.forEach(({element}) => {
+      wrapTextWithScore(element, {
+        fiable: globalScore,
+        faux: 1 - globalScore
+      });
+      addTooltipListeners(element);
     });
 
     // Appliquer le score global aux liens
-    if (globalScore !== null) {
-      document.querySelectorAll('a[href^="http"]').forEach(link => {
-        addTooltipListeners(link);
-        link.setAttribute('data-score', Math.round(globalScore * 100));
-      });
-    }
+    document.querySelectorAll('a[href^="http"]').forEach(link => {
+      addTooltipListeners(link);
+      link.setAttribute('data-score', Math.round(globalScore * 100));
+    });
   }
 
   // Fonction pour ajouter les écouteurs d'infobulle
@@ -178,9 +173,16 @@ window.TooltipModule = (function() {
 
   // Fonction pour obtenir la classe de couleur
   function getColorClass(fiableScore) {
-    if (fiableScore >= 0.85) return 'score-high';
-    if (fiableScore >= 0.6) return 'score-medium';
-    return 'score-low';
+    if (fiableScore < 0.5) {
+      // Rouge pour les scores inférieurs à 50%
+      return 'score-low';
+    } else if (fiableScore < 0.6) {
+      // Orange pastel pour les scores entre 50% et 60%
+      return 'score-medium';
+    } else {
+      // Vert pour les scores supérieurs à 60%
+      return 'score-high';
+    }
   }
 
   // Fonction pour afficher l'infobulle
@@ -195,21 +197,12 @@ window.TooltipModule = (function() {
     tooltip.style.zIndex = '10000';
 
     let scores = null;
-    if (element.tagName.toLowerCase() === 'p') {
-      scores = findScoreForText(element);
-      if (scores) {
-        tooltip.textContent = formatTooltipContent(scores);
-        tooltip.classList.add(getColorClass(scores.fiable));
-      } else {
-        tooltip.textContent = "Paragraphe non analysé";
-        tooltip.classList.add('mylink-tooltip-neutral');
-      }
-    } else if (element.tagName.toLowerCase() === 'a' && globalScore !== null) {
+    if (globalScore !== null) {
       scores = { fiable: globalScore, faux: 1 - globalScore };
       tooltip.textContent = formatTooltipContent(scores);
       tooltip.classList.add(getColorClass(globalScore));
     } else {
-      tooltip.textContent = "Lien non analysé";
+      tooltip.textContent = "Score non disponible";
       tooltip.classList.add('mylink-tooltip-neutral');
     }
 
@@ -276,19 +269,7 @@ window.TooltipModule = (function() {
   function formatTooltipContent(scores) {
     if (!scores) return "Score non disponible";
     const fiablePercent = Math.round(scores.fiable * 100);
-    const fauxPercent = Math.round(scores.faux * 100);
-    let message = `Fiabilité: ${fiablePercent}%`;
-    
-    // Ajouter un message qualitatif
-    if (scores.fiable >= 0.85) {
-      message += "\n✓ Contenu très fiable";
-    } else if (scores.fiable >= 0.6) {
-      message += "\n⚠ Fiabilité moyenne";
-    } else {
-      message += "\n⚠ Contenu peu fiable";
-    }
-    
-    return message;
+    return `Score de fiabilité global: ${fiablePercent}%`;
   }
 
   // Fonction pour trouver le score d'un texte

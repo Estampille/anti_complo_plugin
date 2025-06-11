@@ -40,7 +40,7 @@
       "matches": ["<all_urls>"],
       "js": [
         "accueil/modules/tooltip.js",
-        "accueil/modules/scores.js",
+        "accueil/modules/text-extractor.js",
         "accueil/extract_link.js"
       ],
       "css": ["accueil/infobulles.css"],

@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         console.log("Récupération des articles similaires");
         console.log(analysisState.lastData);
-        const response = await fetch("http://127.0.0.1:5003/get_similar_articl", {
+        const response = await fetch("https://similarity.prismedariane.fr/get_similar_articl", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(analysisState.lastData)

@@ -28,7 +28,7 @@ browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "sendTextToBackend") {
     try {
       // Appel API POST avec le texte extrait
-      const response = await fetch("https://ton-api.com/similar", {
+      const response = await fetch("https://similarity.prismedariane.fr/similar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(message.data)

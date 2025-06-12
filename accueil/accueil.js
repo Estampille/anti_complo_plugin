@@ -182,8 +182,18 @@ document.addEventListener("DOMContentLoaded", async () => {
           message.articles.forEach(article => {
             const div = document.createElement("div");
             div.className = "similar-article";
-            div.innerHTML = `<a href="${article.url}" target="_blank">${article.url}</a> — Fiabilité : ${Math.round(article.fiabilite * 100)}%`;
+            
+            const link = document.createElement("a");
+            link.href = article.url;
+            link.target = "_blank";
+            link.textContent = article.url;
+            
+            const text = document.createTextNode(` — Fiabilité : ${Math.round(article.fiabilite * 100)}%`);
+            
+            div.appendChild(link);
+            div.appendChild(text);
             similarArticlesContainer.appendChild(div);
+            
           });
         } else {
           similarArticlesContainer.textContent = message.error || "Aucun article similaire trouvé.";

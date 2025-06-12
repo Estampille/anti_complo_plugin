@@ -145,9 +145,8 @@ async function makeAPIRequest(payload, tabId) {
   try {
     // Démarrer le compteur dès le début de la requête
     startCounter(tabId);
-    const url='https://3053-2001-861-4240-fdf0-6846-d04b-6202-5131.ngrok-free.app'
-    console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
-    const response = await fetch("http://127.0.0.1:5001/analyze_site_infos", {
+    console.log("Début de la requête API");
+    const response = await fetch("https://evalapp.prismedariane.fr/analyze_site_infos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -244,8 +243,8 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       });
 
       try {
-        console.log("Début de la requête API vers http://localhost:5001/analyze_site_infos");
-        const response = await fetch("http://127.0.0.1:5001/analyze_site_infos", {
+        console.log("Début de la requête API");
+        const response = await fetch("https://evalapp.prismedariane.fr/analyze_site_infos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
